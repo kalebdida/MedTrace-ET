@@ -1,0 +1,3 @@
+# Runtime dependencies. Pinned so the image does not depend on the boto3
+# version that happens to ship in the Lambda base image.
+boto3==1.43.117

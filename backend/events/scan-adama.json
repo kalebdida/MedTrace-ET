@@ -1,0 +1,15 @@
+{
+  "version": "2.0",
+  "routeKey": "$default",
+  "rawPath": "/scan",
+  "queryStringParameters": null,
+  "requestContext": {
+    "http": {
+      "method": "POST",
+      "path": "/scan"
+    },
+    "stage": "$default"
+  },
+  "body": "{\"barcode\": \"]d201095060001343521730123110BATCH42\\u001d21DEMO0001\", \"event_type\": \"receive\", \"site_id\": \"PH-ADAMA-001\", \"device_id\": \"android-demo-1\", \"scanned_at\": \"2026-10-20T09:00:00+03:00\", \"location\": {\"lat\": 8.54, \"lon\": 39.27, \"accuracy_m\": 25}}",
+  "isBase64Encoded": false
+}

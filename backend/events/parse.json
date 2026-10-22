@@ -1,0 +1,15 @@
+{
+  "version": "2.0",
+  "routeKey": "$default",
+  "rawPath": "/parse",
+  "queryStringParameters": null,
+  "requestContext": {
+    "http": {
+      "method": "POST",
+      "path": "/parse"
+    },
+    "stage": "$default"
+  },
+  "body": "{\"barcode\": \"]d201095060001343521730123110BATCH42\\u001d21DEMO0001\"}",
+  "isBase64Encoded": false
+}

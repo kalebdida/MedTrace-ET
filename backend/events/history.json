@@ -1,0 +1,18 @@
+{
+  "version": "2.0",
+  "routeKey": "$default",
+  "rawPath": "/history",
+  "queryStringParameters": {
+    "gtin": "09506000134352",
+    "serial": "DEMO0001"
+  },
+  "requestContext": {
+    "http": {
+      "method": "GET",
+      "path": "/history"
+    },
+    "stage": "$default"
+  },
+  "body": null,
+  "isBase64Encoded": false
+}
