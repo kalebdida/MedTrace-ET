@@ -11,7 +11,15 @@
       "method": "GET",
       "path": "/history"
     },
-    "stage": "$default"
+    "stage": "$default",
+    "authorizer": {
+      "jwt": {
+        "claims": {
+          "sub": "demo-efda-inspector"
+        },
+        "scopes": null
+      }
+    }
   },
   "body": null,
   "isBase64Encoded": false

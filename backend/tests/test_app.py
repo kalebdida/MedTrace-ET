@@ -4,17 +4,32 @@ import pytest
 
 import app
 from medtrace.audit import AuditLog
-from tests.conftest import ADAMA, ADDIS_ABABA, DESSIE, GTIN, ago, call, http_event, iso, pharma_barcode, rest_event
+from tests.conftest import (
+    ADAMA,
+    ADDIS_ABABA,
+    DESSIE,
+    GTIN,
+    ago,
+    call,
+    claims_for,
+    http_event,
+    iso,
+    pharma_barcode,
+    rest_event,
+)
+
+SIGNED_IN = claims_for()
 
 
-def scan(barcode=None, location=ADAMA, minutes_ago=0, **fields):
+def scan(barcode=None, location=ADAMA, minutes_ago=0, site_id=None, user="pharmacist-1", **fields):
+    """A scan by a signed-in user; their site comes from the token, as in production."""
     body = {
         "barcode": barcode or pharma_barcode(),
         "location": location,
         "scanned_at": iso(ago(minutes=minutes_ago)),
         **fields,
     }
-    return call(http_event("POST", "/scan", body))
+    return call(http_event("POST", "/scan", body, claims=claims_for(user, site_id)))
 
 
 def flag_codes(body):
@@ -187,14 +202,14 @@ def test_scan_emits_cloudwatch_emf_metrics(aws, capsys):
     ({"barcode": "01", "scanned_at": "yesterday"}, "ISO-8601"),
 ])
 def test_scan_rejects_bad_requests(aws, body, message):
-    status, resp = call(http_event("POST", "/scan", body))
+    status, resp = call(http_event("POST", "/scan", body, claims=SIGNED_IN))
     assert status == 400
     assert message in resp["error"]
 
 
 @pytest.mark.parametrize("raw, status", [("not json", 400), ("[1, 2]", 400), ("{" + " " * 17000 + "}", 413)])
 def test_malformed_bodies(aws, raw, status):
-    assert call(http_event("POST", "/scan", raw))[0] == status
+    assert call(http_event("POST", "/scan", raw, claims=SIGNED_IN))[0] == status
 
 
 def test_scan_without_table_configured_is_unavailable(monkeypatch):
@@ -211,7 +226,7 @@ def test_scan_without_table_configured_is_unavailable(monkeypatch):
 def test_history_returns_verified_chain(aws):
     scan(location=ADDIS_ABABA, minutes_ago=600, event_type="ship", site_id="WH-ADDIS")
     scan(location=ADAMA, minutes_ago=60, event_type="receive", site_id="PH-ADAMA-001")
-    status, body = call(http_event("GET", "/history", query={"gtin": GTIN, "serial": "SN0001"}))
+    status, body = call(http_event("GET", "/history", query={"gtin": GTIN, "serial": "SN0001"}, claims=SIGNED_IN))
     assert status == 200
     assert body["scan_count"] == 2
     assert body["chain"]["valid"] is True
@@ -225,7 +240,7 @@ def test_history_detects_tampering(aws):
     item = aws["table"].get_item(Key={"pk": pk, "sk": "0000000001"})["Item"]
     aws["table"].put_item(Item={**item, "site_id": "WH-FORGED"})
 
-    _, body = call(http_event("GET", "/history", query={"gtin": GTIN, "serial": "SN0001"}))
+    _, body = call(http_event("GET", "/history", query={"gtin": GTIN, "serial": "SN0001"}, claims=SIGNED_IN))
     assert body["chain"] == {"valid": False, "length": 2, "broken_at_seq": 1, "reason": "record_modified"}
 
 
@@ -238,7 +253,7 @@ def test_history_detects_tampering(aws):
     ({"gtin": GTIN, "serial": "NEVER-SCANNED"}, 404),
 ])
 def test_history_validation(aws, query, status):
-    assert call(http_event("GET", "/history", query=query))[0] == status
+    assert call(http_event("GET", "/history", query=query, claims=SIGNED_IN))[0] == status
 
 
 # --- /parse, /health and routing --------------------------------------------
@@ -260,7 +275,12 @@ def test_rest_api_v1_event(aws):
 def test_http_api_named_stage_prefix_is_stripped(aws):
     status, body = call(http_event("GET", "/prod/health", stage="prod"))
     assert status == 200
-    assert body == {"status": "ok", "audit_log_configured": True, "alerts_configured": True}
+    assert body == {
+        "status": "ok",
+        "audit_log_configured": True,
+        "alerts_configured": True,
+        "auth_required": True,
+    }
 
 
 def test_base64_body(aws):

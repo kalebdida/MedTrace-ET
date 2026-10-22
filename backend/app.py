@@ -9,6 +9,9 @@ Routes (API Gateway REST or HTTP API, Lambda proxy integration):
                     and raise an SNS alert when a clone is intercepted
     GET  /history   audit trail of one pack (?gtin=&serial= or ?sscc=),
                     with hash-chain verification
+
+/scan and /history require a caller authenticated by the API Gateway JWT
+(Cognito) authorizer unless REQUIRE_AUTH=false; /parse and /health are public.
 """
 
 from __future__ import annotations
@@ -21,7 +24,7 @@ import os
 import re
 import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta, timezone
 
 import boto3
@@ -109,6 +112,7 @@ def handle_health(event, services: Services) -> dict:
         "status": "ok",
         "audit_log_configured": services.audit is not None,
         "alerts_configured": services.alerts is not None,
+        "auth_required": services.settings.require_auth,
     }
 
 
@@ -122,7 +126,8 @@ def handle_scan(event, services: Services) -> dict:
         raise HttpError(503, "Scan logging is not configured (SCAN_TABLE_NAME is unset)")
     started = time.perf_counter()
     settings = services.settings
-    req = _scan_request(_json_body(event))
+    caller = _require_caller(event, settings)
+    req = _bind_site(_scan_request(_json_body(event)), caller)
     received_at = _now()
 
     pre_flags: list[Flag] = []
@@ -191,6 +196,8 @@ def handle_scan(event, services: Services) -> dict:
             "flag_codes": [f.code for f in flags],
             "event_type": req.event_type,
             "site_id": req.site_id,
+            "site_source": req.site_source,
+            "actor": req.actor,
             "lat": location.lat if location else None,
             "lon": location.lon if location else None,
             "gtin": parsed.gtin,
@@ -208,6 +215,7 @@ def handle_scan(event, services: Services) -> dict:
         "verdict": stored["verdict"],
         "clone_suspected": clone,
         "flags": [f.to_dict() for f in flags],
+        "site_id": req.site_id,
         "product": parsed.to_dict(),
         "travel": {
             "legs": [leg.to_dict() for leg in sorted(assessment.legs, key=lambda leg: leg.speed_kmh, reverse=True)[:5]],
@@ -226,6 +234,7 @@ def handle_scan(event, services: Services) -> dict:
 def handle_history(event, services: Services) -> dict:
     if services.audit is None:
         raise HttpError(503, "Scan logging is not configured (SCAN_TABLE_NAME is unset)")
+    _require_caller(event, services.settings)
     params = event.get("queryStringParameters") or {}
     sscc, gtin, serial = params.get("sscc"), params.get("gtin"), params.get("serial")
     if sscc:
@@ -320,6 +329,8 @@ def _audit_fields(
         "event_type": req.event_type,
         "biz_step": EVENT_TYPES[req.event_type],
         "site_id": req.site_id,
+        "site_source": req.site_source,
+        "actor": req.actor,
         "device_id": req.device_id,
         "location": _location_dict(req.location),
         "barcode_raw": req.barcode,
@@ -375,6 +386,8 @@ class ScanRequest:
     site_id: str | None
     device_id: str | None
     scanned_at: datetime | None  # None: use server receive time
+    site_source: str | None = None  # "token" (from sign-in) or "client" (from request body)
+    actor: str | None = None  # authenticated user (JWT sub)
 
 
 def _scan_request(body: dict) -> ScanRequest:
@@ -440,6 +453,44 @@ def _timestamp(value) -> datetime | None:
     if ts.tzinfo is None:
         raise HttpError(400, "scanned_at must include a timezone offset, e.g. 2026-10-22T09:15:00+03:00")
     return ts.astimezone(timezone.utc)
+
+
+# --- Authentication -----------------------------------------------------------
+
+@dataclass(frozen=True)
+class Caller:
+    subject: str
+    site_id: str | None
+
+
+def _caller(event: dict, settings: Settings) -> Caller | None:
+    """Claims verified by the API Gateway authorizer; clients cannot set requestContext."""
+    authorizer = (event.get("requestContext") or {}).get("authorizer") or {}
+    # HTTP API JWT authorizer: authorizer.jwt.claims; REST API Cognito authorizer: authorizer.claims
+    claims = (authorizer.get("jwt") or {}).get("claims") or authorizer.get("claims")
+    if not isinstance(claims, dict) or not claims.get("sub"):
+        return None
+    site_id = claims.get(settings.site_claim) or None
+    if site_id is not None and not (isinstance(site_id, str) and _ID_PATTERN.fullmatch(site_id)):
+        raise HttpError(403, "The account's site_id claim is malformed")
+    return Caller(str(claims["sub"]), site_id)
+
+
+def _require_caller(event: dict, settings: Settings) -> Caller | None:
+    caller = _caller(event, settings)
+    if caller is None and settings.require_auth:
+        raise HttpError(401, "Sign-in required")
+    return caller
+
+
+def _bind_site(req: ScanRequest, caller: Caller | None) -> ScanRequest:
+    """The signed-in account's site wins; a request body may only repeat it."""
+    actor = caller.subject if caller else None
+    if caller and caller.site_id:
+        if req.site_id and req.site_id != caller.site_id:
+            raise HttpError(403, f"site_id {req.site_id} does not match the signed-in account's site")
+        return replace(req, site_id=caller.site_id, site_source="token", actor=actor)
+    return replace(req, site_source="client" if req.site_id else None, actor=actor)
 
 
 # --- HTTP plumbing ------------------------------------------------------------

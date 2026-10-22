@@ -8,8 +8,17 @@
       "method": "POST",
       "path": "/scan"
     },
-    "stage": "$default"
+    "stage": "$default",
+    "authorizer": {
+      "jwt": {
+        "claims": {
+          "sub": "demo-pharmacist-dessie",
+          "custom:site_id": "PH-DESSIE-007"
+        },
+        "scopes": null
+      }
+    }
   },
-  "body": "{\"barcode\": \"]d201095060001343521730123110BATCH42\\u001d21DEMO0001\", \"event_type\": \"verify\", \"site_id\": \"PH-DESSIE-007\", \"device_id\": \"android-demo-2\", \"scanned_at\": \"2026-10-20T09:50:00+03:00\", \"location\": {\"lat\": 11.13, \"lon\": 39.6333, \"accuracy_m\": 30}}",
+  "body": "{\"barcode\": \"]d201095060001343521730123110BATCH42\\u001d21DEMO0001\", \"event_type\": \"verify\", \"device_id\": \"android-demo-2\", \"scanned_at\": \"2026-10-20T09:50:00+03:00\", \"location\": {\"lat\": 11.13, \"lon\": 39.6333, \"accuracy_m\": 30}}",
   "isBase64Encoded": false
 }

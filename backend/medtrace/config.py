@@ -6,6 +6,9 @@ import os
 from collections.abc import Mapping
 from dataclasses import dataclass
 
+_TRUE = {"1", "true", "yes", "on"}
+_FALSE = {"0", "false", "no", "off"}
+
 
 @dataclass(frozen=True)
 class Settings:
@@ -17,6 +20,8 @@ class Settings:
     near_expiry_days: int = 30
     metrics_namespace: str = "MedTraceET"
     cors_allow_origin: str = "*"
+    require_auth: bool = True
+    site_claim: str = "custom:site_id"
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] = os.environ) -> Settings:
@@ -30,6 +35,8 @@ class Settings:
             near_expiry_days=_number(env, "NEAR_EXPIRY_DAYS", defaults.near_expiry_days, int),
             metrics_namespace=env.get("METRICS_NAMESPACE") or defaults.metrics_namespace,
             cors_allow_origin=env.get("CORS_ALLOW_ORIGIN") or defaults.cors_allow_origin,
+            require_auth=_flag(env, "REQUIRE_AUTH", defaults.require_auth),
+            site_claim=env.get("SITE_ID_CLAIM") or defaults.site_claim,
         )
 
 
@@ -44,3 +51,14 @@ def _number(env: Mapping[str, str], name: str, default, kind):
     if value <= 0:
         raise ValueError(f"Environment variable {name} must be positive, got {raw!r}")
     return value
+
+
+def _flag(env: Mapping[str, str], name: str, default: bool) -> bool:
+    raw = (env.get(name) or "").strip().lower()
+    if not raw:
+        return default
+    if raw in _TRUE:
+        return True
+    if raw in _FALSE:
+        return False
+    raise ValueError(f"Environment variable {name} must be true or false, got {env.get(name)!r}")

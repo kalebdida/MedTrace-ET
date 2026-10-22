@@ -31,29 +31,43 @@ def ago(**kwargs):
     return datetime.now(timezone.utc) - timedelta(**kwargs)
 
 
-def http_event(method, path, body=None, query=None, stage="$default", base64_body=False):
+def claims_for(user="pharmacist-1", site_id=None):
+    """JWT claims as the API Gateway Cognito authorizer passes them on."""
+    claims = {"sub": user}
+    if site_id:
+        claims["custom:site_id"] = site_id
+    return claims
+
+
+def http_event(method, path, body=None, query=None, stage="$default", base64_body=False, claims=None):
     """API Gateway HTTP API (payload 2.0) proxy event."""
     raw = json.dumps(body) if body is not None and not isinstance(body, str) else body
     if raw is not None and base64_body:
         raw = base64.b64encode(raw.encode()).decode()
+    context = {"http": {"method": method, "path": path}, "stage": stage}
+    if claims is not None:
+        context["authorizer"] = {"jwt": {"claims": claims, "scopes": None}}
     return {
         "version": "2.0",
         "routeKey": "$default",
         "rawPath": path,
         "queryStringParameters": query,
-        "requestContext": {"http": {"method": method, "path": path}, "stage": stage},
+        "requestContext": context,
         "body": raw,
         "isBase64Encoded": base64_body,
     }
 
 
-def rest_event(method, path, body=None, query=None):
+def rest_event(method, path, body=None, query=None, claims=None):
     """API Gateway REST API (payload 1.0) proxy event."""
+    context = {"stage": "prod"}
+    if claims is not None:
+        context["authorizer"] = {"claims": claims}
     return {
         "httpMethod": method,
         "path": path,
         "queryStringParameters": query,
-        "requestContext": {"stage": "prod"},
+        "requestContext": context,
         "body": json.dumps(body) if body is not None else None,
         "isBase64Encoded": False,
     }
