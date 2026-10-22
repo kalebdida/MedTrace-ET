@@ -207,7 +207,7 @@ def test_scan_rejects_bad_requests(aws, body, message):
     assert message in resp["error"]
 
 
-@pytest.mark.parametrize("raw, status", [("not json", 400), ("[1, 2]", 400), ("{" + " " * 17000 + "}", 413)])
+@pytest.mark.parametrize("raw, status", [("not json", 400), ("[1, 2]", 400), ("{" + " " * 2_200_001 + "}", 413)])
 def test_malformed_bodies(aws, raw, status):
     assert call(http_event("POST", "/scan", raw, claims=SIGNED_IN))[0] == status
 
@@ -280,6 +280,7 @@ def test_http_api_named_stage_prefix_is_stripped(aws):
         "audit_log_configured": True,
         "alerts_configured": True,
         "auth_required": True,
+        "visual_model_loaded": False,
     }
 
 

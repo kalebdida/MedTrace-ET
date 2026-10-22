@@ -38,6 +38,7 @@ class AlertPublisher:
             "actor": record.get("actor"),
             "device_id": record.get("device_id"),
             "location": record.get("location"),
+            "visual": record.get("visual"),
             "flags": [f.to_dict() for f in flags if f.clone_indicator],
             "audit": {"pk": record["pk"], "seq": record["seq"], "record_hash": record["record_hash"]},
         }
@@ -65,6 +66,7 @@ def _email_body(p: Mapping) -> str:
     loc = p.get("location") or {}
     where = f"({loc['lat']}, {loc['lon']})" if "lat" in loc else "location not reported"
     site_note = " (verified by sign-in)" if p.get("site_source") == "token" else ""
+    packaging = p.get("visual") or {}
     lines = [
         "CLONED BARCODE INTERCEPTED",
         "",
@@ -76,6 +78,8 @@ def _email_body(p: Mapping) -> str:
         f"Scanned: {p.get('scanned_at')} ({p.get('event_type')})",
         f"Site:    {p.get('site_id') or '-'}{site_note}    Device: {p.get('device_id') or '-'}",
         f"Where:   {where}",
+        f"Packaging check: {packaging.get('status', 'no photo')}"
+        + (f" (similarity {packaging['similarity']})" if packaging.get("similarity") is not None else ""),
         "",
         "Evidence:",
         *(f"  - {f['code']}: {f['message']}" for f in p["flags"]),

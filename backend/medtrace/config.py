@@ -22,11 +22,14 @@ class Settings:
     cors_allow_origin: str = "*"
     require_auth: bool = True
     site_claim: str = "custom:site_id"
+    visual_model_module: str | None = None
+    visual_mismatch_below: float = 0.5
+    visual_match_at: float = 0.8
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] = os.environ) -> Settings:
         defaults = cls()
-        return cls(
+        settings = cls(
             table_name=env.get("SCAN_TABLE_NAME") or None,
             alert_topic_arn=env.get("ALERT_TOPIC_ARN") or None,
             max_speed_kmh=_number(env, "MAX_PLAUSIBLE_SPEED_KMH", defaults.max_speed_kmh, float),
@@ -37,7 +40,13 @@ class Settings:
             cors_allow_origin=env.get("CORS_ALLOW_ORIGIN") or defaults.cors_allow_origin,
             require_auth=_flag(env, "REQUIRE_AUTH", defaults.require_auth),
             site_claim=env.get("SITE_ID_CLAIM") or defaults.site_claim,
+            visual_model_module=env.get("VISUAL_MODEL_MODULE") or None,
+            visual_mismatch_below=_number(env, "VISUAL_MISMATCH_BELOW", defaults.visual_mismatch_below, float),
+            visual_match_at=_number(env, "VISUAL_MATCH_AT", defaults.visual_match_at, float),
         )
+        if not settings.visual_mismatch_below <= settings.visual_match_at <= 1:
+            raise ValueError("Visual thresholds must satisfy 0 < VISUAL_MISMATCH_BELOW <= VISUAL_MATCH_AT <= 1")
+        return settings
 
 
 def _number(env: Mapping[str, str], name: str, default, kind):

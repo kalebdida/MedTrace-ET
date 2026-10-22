@@ -4,9 +4,9 @@ Routes (API Gateway REST or HTTP API, Lambda proxy integration):
 
     GET  /health    liveness probe
     POST /parse     parse and validate a raw GS1 barcode (stateless)
-    POST /scan      verify a scanned pack: parse it, run the clone and
-                    travel-velocity checks, append the scan to the audit log
-                    and raise an SNS alert when a clone is intercepted
+    POST /scan      verify a scanned pack: parse it, run the clone,
+                    travel-velocity and packaging checks, append the scan to
+                    the audit log and raise an SNS alert on a clone
     GET  /history   audit trail of one pack (?gtin=&serial= or ?sscc=),
                     with hash-chain verification
 
@@ -29,7 +29,7 @@ from datetime import datetime, timedelta, timezone
 
 import boto3
 
-from medtrace import gs1, metrics
+from medtrace import gs1, metrics, visual
 from medtrace.alerts import AlertPublisher
 from medtrace.audit import AuditLog, ChainConflict, verify_chain
 from medtrace.config import Settings
@@ -47,7 +47,9 @@ EVENT_TYPES = {  # request event_type -> EPCIS business step (CBV)
     "ship": "shipping",
     "dispense": "dispensing",
 }
-MAX_BODY_BYTES = 16 * 1024
+MAX_IMAGE_BYTES = 1_500_000
+MAX_BODY_BYTES = 2_200_000  # room for one base64-encoded package photo
+_IMAGE_SIGNATURES = (b"\xff\xd8\xff", b"\x89PNG\r\n\x1a\n")  # JPEG, PNG
 MAX_BARCODE_CHARS = 512
 MAX_CLOCK_SKEW = timedelta(minutes=5)
 APPEND_ATTEMPTS = 3
@@ -67,6 +69,7 @@ class Services:
     settings: Settings
     audit: AuditLog | None
     alerts: AlertPublisher | None
+    visual: visual.VisualVerifier | None
 
 
 _services: Services | None = None
@@ -79,7 +82,8 @@ def get_services() -> Services:
         settings = Settings.from_env()
         audit = AuditLog(boto3.resource("dynamodb").Table(settings.table_name)) if settings.table_name else None
         alerts = AlertPublisher(boto3.client("sns"), settings.alert_topic_arn) if settings.alert_topic_arn else None
-        _services = Services(settings, audit, alerts)
+        verifier = visual.load_verifier(settings.visual_model_module)
+        _services = Services(settings, audit, alerts, verifier)
     return _services
 
 
@@ -113,6 +117,7 @@ def handle_health(event, services: Services) -> dict:
         "audit_log_configured": services.audit is not None,
         "alerts_configured": services.alerts is not None,
         "auth_required": services.settings.require_auth,
+        "visual_model_loaded": services.visual is not None,
     }
 
 
@@ -143,6 +148,14 @@ def handle_scan(event, services: Services) -> dict:
 
     parsed = gs1.parse(req.barcode, today=received_at.astimezone(EAT).date())
     pre_flags.extend(_barcode_flags(parsed, settings))
+    packaging = None
+    if req.package_image is not None:
+        if parsed.valid and parsed.gtin:
+            thresholds = visual.VisualThresholds(settings.visual_mismatch_below, settings.visual_match_at)
+            packaging, visual_flags = visual.check_packaging(services.visual, req.package_image, parsed.gtin, thresholds)
+            pre_flags.extend(visual_flags)
+        else:
+            packaging = visual.not_performed(req.package_image)
     pk = _identity_key(parsed, received_at)
     tracked = not pk.startswith(UNIDENTIFIED)
     current = ScanObservation(
@@ -163,7 +176,7 @@ def handle_scan(event, services: Services) -> dict:
             if tracked else None
         )
         flags = pre_flags + (assessment.flags if assessment else [])
-        fields = _audit_fields(req, current, received_at, parsed, flags, assessment)
+        fields = _audit_fields(req, current, received_at, parsed, flags, assessment, packaging)
         try:
             stored = services.audit.append(pk, history[0] if history else None, fields)
             break
@@ -187,6 +200,8 @@ def handle_scan(event, services: Services) -> dict:
             ("CloneAlerts", int(clone), metrics.COUNT),
             ("AlertFailures", int(clone and services.alerts is not None and not alert_sent), metrics.COUNT),
             ("InvalidBarcodes", int(not parsed.valid), metrics.COUNT),
+            ("VisualMismatches", int(packaging is not None and packaging.status == visual.MISMATCH), metrics.COUNT),
+            ("VisualCheckErrors", int(packaging is not None and packaging.status == visual.ERROR), metrics.COUNT),
             ("ScanLatency", round((time.perf_counter() - started) * 1000, 1), metrics.MILLISECONDS),
         ],
         {"Service": "MedTraceBackend"},
@@ -198,6 +213,8 @@ def handle_scan(event, services: Services) -> dict:
             "site_id": req.site_id,
             "site_source": req.site_source,
             "actor": req.actor,
+            "visual_status": packaging.status if packaging else None,
+            "visual_similarity": packaging.similarity if packaging else None,
             "lat": location.lat if location else None,
             "lon": location.lon if location else None,
             "gtin": parsed.gtin,
@@ -217,6 +234,7 @@ def handle_scan(event, services: Services) -> dict:
         "flags": [f.to_dict() for f in flags],
         "site_id": req.site_id,
         "product": parsed.to_dict(),
+        "visual": packaging.to_dict() if packaging else None,
         "travel": {
             "legs": [leg.to_dict() for leg in sorted(assessment.legs, key=lambda leg: leg.speed_kmh, reverse=True)[:5]],
             "features": assessment.features,
@@ -319,6 +337,7 @@ def _audit_fields(
     parsed: gs1.ParseResult,
     flags: list[Flag],
     assessment,
+    packaging: visual.VisualCheck | None,
 ) -> dict:
     fields = {
         "record_type": "SCAN",
@@ -344,6 +363,7 @@ def _audit_fields(
         "clone_suspected": any(f.clone_indicator for f in flags),
         "flags": [f.to_dict() for f in flags],
         "travel_features": assessment.features if assessment else None,
+        "visual": packaging.to_dict() if packaging else None,
     }
     return {k: v for k, v in fields.items() if v is not None}
 
@@ -386,6 +406,7 @@ class ScanRequest:
     site_id: str | None
     device_id: str | None
     scanned_at: datetime | None  # None: use server receive time
+    package_image: bytes | None = None
     site_source: str | None = None  # "token" (from sign-in) or "client" (from request body)
     actor: str | None = None  # authenticated user (JWT sub)
 
@@ -401,6 +422,7 @@ def _scan_request(body: dict) -> ScanRequest:
         site_id=_optional_id(body, "site_id"),
         device_id=_optional_id(body, "device_id"),
         scanned_at=_timestamp(body.get("scanned_at")),
+        package_image=_package_image(body.get("package_image")),
     )
 
 
@@ -411,6 +433,24 @@ def _barcode(body: dict) -> str:
     if len(raw) > MAX_BARCODE_CHARS:
         raise HttpError(400, f"barcode must be at most {MAX_BARCODE_CHARS} characters")
     return raw
+
+
+def _package_image(value) -> bytes | None:
+    if value is None:
+        return None
+    if not isinstance(value, str):
+        raise HttpError(400, "package_image must be a base64-encoded JPEG or PNG")
+    if value.startswith("data:"):  # tolerate data URLs from web/mobile clients
+        value = value.partition(",")[2]
+    try:
+        image = base64.b64decode(value, validate=True)
+    except ValueError:
+        raise HttpError(400, "package_image is not valid base64") from None
+    if len(image) > MAX_IMAGE_BYTES:
+        raise HttpError(413, f"package_image exceeds {MAX_IMAGE_BYTES} bytes")
+    if not image.startswith(_IMAGE_SIGNATURES):
+        raise HttpError(400, "package_image must be a JPEG or PNG")
+    return image
 
 
 def _location(value) -> GeoPoint | None:
