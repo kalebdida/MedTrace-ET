@@ -29,10 +29,13 @@ Outputs:
 Full table: [`results.md`](results.md). Headline at the default 120 km/h limit:
 
 - **91.7%** of cloned serials are flagged: 92.5% when copies go to other cities, 89.4% within the same city.
-- **0.1%** of genuine packs are falsely flagged (4 of 2,687), and **98.6%** of alerts are real clones.
+- **0 of 2,687** genuine packs are falsely flagged (100% precision) after the same-site fix described below.
 - Only **52%** of clones are flagged **before a counterfeit is dispensed**. Barcode and travel rules can only fire once a second copy of the serial is scanned, and the dispense rules (which catch most clones) often fire when the genuine pack turns up after a counterfeit has already been sold. Closing that gap is the job of the packaging model: it can reject a counterfeit pack on its **first** scan.
-- **Choosing the limit:** dropping it below 100 km/h catches clones earlier but raises false alarms quickly (0.9% at 60 km/h). At or above 100 km/h, false alarms stay at about 0.1%.
-- **False-alarm cause:** all 4 come from a pharmacist re-checking a pack at the same pharmacy minutes after dispensing it, while the phone reports a bad fix with a falsely small accuracy radius.
+- **Choosing the limit:** dropping it below 100 km/h catches clones slightly earlier (56% before dispensing at 60 km/h) but starts flagging genuine air-freight and truck journeys (0.6% false alarms at 60 km/h). At or above 100 km/h, false alarms are zero. 120 km/h keeps a margin for the fastest legitimate road trips, since straight-line distance understates road distance.
+
+### What the evaluation changed
+
+The first run flagged 4 genuine packs (0.1%), all for the same reason: a pharmacist re-checked a pack at the **same pharmacy** minutes after dispensing it, and the phone produced a fix several kilometres off while reporting 10–50 m accuracy. Because the site now comes from the signed-in account, two scans at the same site cannot be travel. The detector therefore no longer treats the distance between them as a travel leg. That removed every false alarm at 100 km/h and above without missing any additional clones.
 
 ## Dataset for the routing-anomaly model
 

@@ -98,6 +98,9 @@ def travel_leg(current: ScanObservation, prior: ScanObservation, config: Velocit
     effective = max(0.0, distance - slack_km)
     hours = max(abs((current.scanned_at - prior.scanned_at).total_seconds()) / 3600, MIN_GAP_HOURS)
     speed = effective / hours
+    # Two scans at the same registered site are not travel: any distance
+    # between them is GPS error, often from fixes that under-report it.
+    same_site = current.site_id is not None and current.site_id == prior.site_id
     return TravelLeg(
         prior_event_id=prior.event_id,
         prior_site_id=prior.site_id,
@@ -106,7 +109,7 @@ def travel_leg(current: ScanObservation, prior: ScanObservation, config: Velocit
         effective_distance_km=effective,
         hours=hours,
         speed_kmh=speed,
-        impossible=effective >= config.min_distance_km and speed > config.max_speed_kmh,
+        impossible=not same_site and effective >= config.min_distance_km and speed > config.max_speed_kmh,
     )
 
 

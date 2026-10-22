@@ -23,6 +23,7 @@ backend/
 │   ├── flags.py           Risk flags -> PASS / WARN / FAIL verdict
 │   ├── config.py          Environment-variable settings
 │   └── jsonutil.py        Decimal/date JSON encoding
+├── evaluation/            Synthetic scan simulator, detection results, labelled dataset
 ├── tests/                 pytest suite (DynamoDB/SNS mocked with moto)
 ├── events/                Sample API Gateway events (demo, sam local, Lambda console)
 ├── Dockerfile             Lambda container image
@@ -168,6 +169,9 @@ impossible = effective ≥ MIN_TRAVEL_DISTANCE_KM  and  speed > MAX_PLAUSIBLE_SP
 - **120 km/h on straight-line distance** is the default limit. Roads are longer than great circles, so this already corresponds to faster-than-highway road travel. A legitimate Addis → Dessie delivery takes hours and passes; Adama → Dessie (291 km) in 50 min does not.
 - Subtracting the reported GPS accuracy and ignoring hops under 2 km keeps poor fixes from generating alerts.
 - The absolute time gap is used, so scans uploaded late from offline phones are compared correctly.
+- Two scans at the same site are never a travel leg. Any distance between them is GPS error, which the [evaluation](evaluation/README.md) showed to be the only source of false alarms.
+
+**Evaluation:** on a synthetic Ethiopian supply-chain dataset of 3,000 packs and 18.5k scans (see [`evaluation/`](evaluation/README.md)), the default limit flags 91.7% of cloned serials with no false alarms on genuine packs. Only 52% are caught before a counterfeit is dispensed, which is why the packaging check matters.
 
 | Flag | Severity | Clone? | Raised when |
 |------|----------|--------|-------------|

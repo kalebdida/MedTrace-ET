@@ -83,6 +83,31 @@ def test_gps_accuracy_prevents_false_alarm():
     assert result.flags == []
 
 
+def test_bad_gps_fix_at_the_same_site_is_not_travel():
+    # A re-check a minute after dispensing, with a fix 4 km off that claims 20 m accuracy.
+    here = GeoPoint(9.0108, 38.7613, accuracy_m=20)
+    bad_fix = GeoPoint(9.0468, 38.7613, accuracy_m=20)
+    result = assess_clone_risk(
+        scan("now", 1, location=bad_fix, event_type="verify", site_id="PH-1"),
+        [scan("before", 0, location=here, event_type="dispense", site_id="PH-1")],
+        CONFIG,
+    )
+    assert result.legs[0].speed_kmh > CONFIG.max_speed_kmh
+    assert not result.legs[0].impossible
+    assert [f.code for f in result.flags] == ["PREVIOUSLY_DISPENSED"]
+
+
+def test_same_gps_jump_between_different_sites_still_flags():
+    here = GeoPoint(9.0108, 38.7613, accuracy_m=20)
+    four_km_away = GeoPoint(9.0468, 38.7613, accuracy_m=20)
+    result = assess_clone_risk(
+        scan("now", 1, location=four_km_away, site_id="PH-2"),
+        [scan("before", 0, location=here, site_id="PH-1")],
+        CONFIG,
+    )
+    assert flag_codes(result) == ["IMPOSSIBLE_TRAVEL"]
+
+
 def test_short_hops_below_min_distance_never_flag():
     a = GeoPoint(9.0108, 38.7613)
     b = GeoPoint(9.0208, 38.7613)  # ~1.1 km
