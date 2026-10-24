@@ -1,0 +1,52 @@
+name: Test and deploy
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: medtrace-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install -r backend/requirements-dev.txt
+      - run: cd backend && python -m pytest -q
+      - uses: aws-actions/setup-sam@v2
+      - run: sam validate --lint --template-file infra/template.yaml --region us-east-1
+      - run: cfn-lint infra/bootstrap/github-oidc.yaml
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      ALERT_EMAIL: ${{ vars.ALERT_EMAIL }}
+      BUDGET_EMAIL: ${{ vars.BUDGET_EMAIL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/setup-sam@v2
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - working-directory: infra
+        run: |
+          test -n "$BUDGET_EMAIL"
+          sam build
+          sam deploy --region "$AWS_REGION" --no-confirm-changeset --no-fail-on-empty-changeset --parameter-overrides "AlertEmail=$ALERT_EMAIL" "BudgetEmail=$BUDGET_EMAIL"
+      - name: Public endpoint smoke test
+        run: |
+          API_URL=$(aws cloudformation describe-stacks --stack-name medtrace-et --query 'Stacks[0].Outputs[?OutputKey==`ApiUrl`].OutputValue' --output text)
+          curl --fail-with-body --retry 5 "$API_URL/health" | jq -e '.status == "ok"'
+          jq -r .body backend/events/parse.json > /tmp/parse.json
+          curl --fail-with-body --retry 5 -H 'Content-Type: application/json' --data-binary @/tmp/parse.json "$API_URL/parse" | jq -e '.valid == true'
