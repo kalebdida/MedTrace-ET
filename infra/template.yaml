@@ -1,0 +1,316 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Parameters:
+  AlertEmail:
+    Type: String
+    Default: ''
+  BudgetEmail:
+    Type: String
+    AllowedPattern: '[^@\s]+@[^@\s]+\.[^@\s]+'
+Conditions:
+  HasAlertEmail:
+    Fn::Not:
+    - Fn::Equals:
+      - Ref: AlertEmail
+      - ''
+Resources:
+  ScanTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      AttributeDefinitions:
+      - AttributeName: pk
+        AttributeType: S
+      - AttributeName: sk
+        AttributeType: S
+      KeySchema:
+      - AttributeName: pk
+        KeyType: HASH
+      - AttributeName: sk
+        KeyType: RANGE
+      ProvisionedThroughput:
+        ReadCapacityUnits: 5
+        WriteCapacityUnits: 5
+      DeletionProtectionEnabled: true
+  AlertTopic:
+    Type: AWS::SNS::Topic
+    Properties: {}
+  AlertSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: email
+      Endpoint:
+        Ref: AlertEmail
+      TopicArn:
+        Ref: AlertTopic
+    Condition: HasAlertEmail
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+      Schema:
+      - Name: site_id
+        AttributeDataType: String
+        Mutable: true
+        StringAttributeConstraints:
+          MinLength: '1'
+          MaxLength: '64'
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId:
+        Ref: UserPool
+      GenerateSecret: false
+      ReadAttributes:
+      - email
+      - custom:site_id
+      WriteAttributes:
+      - email
+      ExplicitAuthFlows:
+      - ALLOW_USER_PASSWORD_AUTH
+      - ALLOW_REFRESH_TOKEN_AUTH
+      PreventUserExistenceErrors: ENABLED
+  FunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+          Action: sts:AssumeRole
+      ManagedPolicyArns:
+      - Fn::Sub: arn:${AWS::Partition}:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+      - PolicyName: AppendAuditAndAlert
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - dynamodb:PutItem
+            - dynamodb:Query
+            Resource:
+              Fn::GetAtt:
+              - ScanTable
+              - Arn
+          - Effect: Allow
+            Action: sns:Publish
+            Resource:
+              Ref: AlertTopic
+  Api:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 50
+        ThrottlingRateLimit: 20
+      CorsConfiguration:
+        AllowOrigins:
+        - '*'
+        AllowHeaders:
+        - Authorization
+        - Content-Type
+        AllowMethods:
+        - GET
+        - POST
+        - OPTIONS
+      Auth:
+        Authorizers:
+          CognitoJwt:
+            IdentitySource: $request.header.Authorization
+            JwtConfiguration:
+              issuer:
+                Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
+              audience:
+              - Ref: UserPoolClient
+  Backend:
+    Type: AWS::Serverless::Function
+    Properties:
+      PackageType: Image
+      MemorySize: 512
+      Timeout: 30
+      Role:
+        Fn::GetAtt:
+        - FunctionRole
+        - Arn
+      Environment:
+        Variables:
+          SCAN_TABLE_NAME:
+            Ref: ScanTable
+          ALERT_TOPIC_ARN:
+            Ref: AlertTopic
+          REQUIRE_AUTH: 'true'
+          LOG_LEVEL: INFO
+      Events:
+        Health:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: Api
+            Method: GET
+            Path: /health
+        Parse:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: Api
+            Method: POST
+            Path: /parse
+        Scan:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: Api
+            Method: POST
+            Path: /scan
+            Auth:
+              Authorizer: CognitoJwt
+        History:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: Api
+            Method: GET
+            Path: /history
+            Auth:
+              Authorizer: CognitoJwt
+    Metadata:
+      DockerContext: ../backend
+      Dockerfile: Dockerfile
+      DockerTag: python3.13
+  FunctionLogs:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName:
+        Fn::Sub: /aws/lambda/${Backend}
+      RetentionInDays: 14
+  CloneAlertsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      Namespace: MedTraceET
+      MetricName: CloneAlerts
+      Dimensions:
+      - Name: Service
+        Value: MedTraceBackend
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+      - Ref: AlertTopic
+  AlertFailuresAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      Namespace: MedTraceET
+      MetricName: AlertFailures
+      Dimensions:
+      - Name: Service
+        Value: MedTraceBackend
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+      - Ref: AlertTopic
+  VisualCheckErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      Namespace: MedTraceET
+      MetricName: VisualCheckErrors
+      Dimensions:
+      - Name: Service
+        Value: MedTraceBackend
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+      - Ref: AlertTopic
+  ErrorsAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      Namespace: AWS/Lambda
+      MetricName: Errors
+      Dimensions:
+      - Name: FunctionName
+        Value:
+          Ref: Backend
+      Statistic: Sum
+      Period: 60
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+      - Ref: AlertTopic
+  Dashboard:
+    Type: AWS::CloudWatch::Dashboard
+    Properties:
+      DashboardBody:
+        Fn::Sub: '{"widgets": [{"type": "metric", "x": 0, "y": 0, "width": 24, "height": 6, "properties": {"title":
+          "Scans and clones", "region": "${AWS::Region}", "metrics": [["MedTraceET", "ScansProcessed", "Service",
+          "MedTraceBackend"], ["MedTraceET", "CloneAlerts", "Service", "MedTraceBackend"], ["MedTraceET", "InvalidBarcodes",
+          "Service", "MedTraceBackend"]], "period": 60, "stat": "Sum"}}, {"type": "metric", "x": 0, "y": 6, "width":
+          24, "height": 6, "properties": {"title": "Scan latency", "region": "${AWS::Region}", "metrics": [["MedTraceET",
+          "ScanLatency", "Service", "MedTraceBackend", {"stat": "p50"}], ["MedTraceET", "ScanLatency", "Service",
+          "MedTraceBackend", {"stat": "p95"}]], "period": 60, "stat": "Sum"}}, {"type": "metric", "x": 0, "y": 12,
+          "width": 24, "height": 6, "properties": {"title": "Lambda", "region": "${AWS::Region}", "metrics": [["AWS/Lambda",
+          "Errors", "FunctionName", "${Backend}"], ["AWS/Lambda", "Duration", "FunctionName", "${Backend}"]], "period":
+          60, "stat": "Sum"}}, {"type": "log", "x": 0, "y": 18, "width": 24, "height": 6, "properties": {"region":
+          "${AWS::Region}", "title": "Clone hotspots", "query": "SOURCE ''/aws/lambda/${Backend}'' | fields site_id,
+          lat, lon | filter CloneAlerts = 1 | stats count(*) as clone_alerts by site_id, lat, lon | sort clone_alerts
+          desc"}}]}'
+  Budget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetName:
+          Fn::Sub: ${AWS::StackName}-monthly
+        BudgetLimit:
+          Amount: 5
+          Unit: USD
+        TimeUnit: MONTHLY
+        BudgetType: COST
+      NotificationsWithSubscribers:
+      - Notification:
+          NotificationType: ACTUAL
+          ComparisonOperator: GREATER_THAN
+          Threshold: 80
+          ThresholdType: PERCENTAGE
+        Subscribers:
+        - SubscriptionType: EMAIL
+          Address:
+            Ref: BudgetEmail
+      - Notification:
+          NotificationType: FORECASTED
+          ComparisonOperator: GREATER_THAN
+          Threshold: 100
+          ThresholdType: PERCENTAGE
+        Subscribers:
+        - SubscriptionType: EMAIL
+          Address:
+            Ref: BudgetEmail
+Outputs:
+  ApiUrl:
+    Value:
+      Fn::Sub: https://${Api}.execute-api.${AWS::Region}.${AWS::URLSuffix}
+  UserPoolId:
+    Value:
+      Ref: UserPool
+  UserPoolClientId:
+    Value:
+      Ref: UserPoolClient
+  TableName:
+    Value:
+      Ref: ScanTable
+  AlertTopicArn:
+    Value:
+      Ref: AlertTopic

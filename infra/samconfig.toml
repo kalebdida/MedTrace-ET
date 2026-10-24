@@ -1,0 +1,8 @@
+version = 0.1
+[default.deploy.parameters]
+stack_name = "medtrace-et"
+region = "us-east-1"
+resolve_image_repos = true
+resolve_s3 = true
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
