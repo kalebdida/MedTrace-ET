@@ -1,0 +1,12 @@
+# CPU PyTorch wheels; Python 3.13
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.1+cpu
+torchvision==0.29.1+cpu
+numpy==2.5.2
+pillow==12.3.0
+onnx==1.23.2
+onnxruntime==1.31.0
+scikit-learn==1.9.1
+skl2onnx==1.20.0
+pandas==3.1.0
+matplotlib==3.11.2

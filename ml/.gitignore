@@ -1,0 +1,6 @@
+__pycache__/
+packaging/data/raw/
+packaging/data/generated/
+packaging/checkpoint.pt
+
+.ruff_cache/

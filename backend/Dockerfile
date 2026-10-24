@@ -12,5 +12,6 @@ RUN pip install --no-cache-dir -r ${LAMBDA_TASK_ROOT}/requirements.txt
 
 COPY app.py ${LAMBDA_TASK_ROOT}/
 COPY medtrace/ ${LAMBDA_TASK_ROOT}/medtrace/
+COPY visual_model/ ${LAMBDA_TASK_ROOT}/visual_model/
 
 CMD ["app.lambda_handler"]

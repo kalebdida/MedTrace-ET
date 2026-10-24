@@ -1,0 +1,13 @@
+# Packaging sources and preprocessing
+
+No real medicine photographs or counterfeit examples were available for this run. `scripts/make_demo_dataset.py` renders three fictional designs, 15 captures each, with PIL panels, text and randomized batch stamps. They are project-generated synthetic assets, not actual medicines or genuine manufacturer references. GTIN 09506000134352 is the GS1 example identifier; the other two are demo-only identifiers. Never enroll these as real products.
+
+For team-owned phone photographs use `data/raw/<gtin>/genuine/*.jpg`. Obtain permission and remove identifying backgrounds. Supply at least 10 independent captures per product; different crops of the same photograph must not be treated as independent captures. The current splitter assumes each source file is independent; for multiple shots of one physical pack, group those captures before using this pipeline for credible field evaluation. Raw photographs are ignored by Git.
+
+Training fixes seed 2026 and splits source files 60/20/20 before augmentation. The manifest records every source, derived image, label and split. Enrollment uses only originals from training sources. Evaluation uses held-out source variants, but all splits share fictional designs; this does not measure generalization to unseen manufacturers.
+
+Six synthetic defects: HSV hue shift; Gaussian blur plus minimum filter (dilation of dark ink) within the printed text rectangle; JPEG quality 5 reprint artifacts; resized and displaced lower batch stamp; resolution reduced to 40×40 then enlarged; and dark halftone dots every three pixels. Coordinates are proportional to a normalized 224×224 front-of-box crop. For real photos, crop and align the box face and annotate/adjust text and stamp regions; fixed demo rectangles are not a text detector. These intentionally strong defects do not represent the distribution of real counterfeits.
+
+Hard-genuine transforms include brightness 0.85–1.15, rotation ±3 degrees, affine shear ±0.025 and Gaussian phone blur up to 0.4 pixels. Preprocessing applies EXIF orientation, RGB conversion, bilinear resize to 224×224, division by 255 and ImageNet mean/std normalization. Arbitrary phone viewpoints, glare, occlusion, extreme lighting and packaging revisions are not validated.
+
+The committed backend smoke fixtures are the predetermined first original capture of the GS1 example design and its resolution defect. They are regression fixtures, not an independent evaluation dataset. Generate the full dataset using the documented commands; manifest and held-out predictions are committed for auditability.

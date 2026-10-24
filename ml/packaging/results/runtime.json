@@ -1,0 +1,7 @@
+{
+  "host": "development Linux x86_64 Python 3.13, not Lambda",
+  "process_max_rss_kib": 81304,
+  "load_seconds": 0.02639303299997664,
+  "onnx_threads": 2,
+  "container_validation": "Blocked: public.ecr.aws Lambda base image HEAD returned Forbidden"
+}

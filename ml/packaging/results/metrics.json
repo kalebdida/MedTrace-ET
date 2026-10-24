@@ -1,0 +1,60 @@
+{
+  "thresholds": {
+    "VISUAL_MISMATCH_BELOW": 0.8423078060150146,
+    "VISUAL_MATCH_AT": 0.8462605834007263
+  },
+  "validation_genuine_count": 9,
+  "test_count": 63,
+  "auc": 0.9835390946502058,
+  "accuracy": 0.9365079365079365,
+  "precision": 0.9464285714285714,
+  "recall": 0.9814814814814815,
+  "f1": 0.9636363636363636,
+  "confusion_matrix_tn_fp_fn_tp": [
+    [
+      6,
+      3
+    ],
+    [
+      1,
+      53
+    ]
+  ],
+  "test_genuine_false_alarm_rate": 0.3333333333333333,
+  "test_genuine_acceptance": 0.6666666666666666,
+  "latency_ms_p50_p95": [
+    3.5781544999622383,
+    3.800269249967414
+  ],
+  "model_bytes": 4013033,
+  "per_defect": {
+    "genuine": {
+      "count": 9,
+      "mismatch_rate": 0.3333333333333333
+    },
+    "halftone": {
+      "count": 9,
+      "mismatch_rate": 1.0
+    },
+    "hue": {
+      "count": 9,
+      "mismatch_rate": 0.8888888888888888
+    },
+    "ink_bleed": {
+      "count": 9,
+      "mismatch_rate": 1.0
+    },
+    "reprint": {
+      "count": 9,
+      "mismatch_rate": 1.0
+    },
+    "resolution": {
+      "count": 9,
+      "mismatch_rate": 1.0
+    },
+    "stamp": {
+      "count": 9,
+      "mismatch_rate": 1.0
+    }
+  }
+}

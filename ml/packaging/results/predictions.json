@@ -1,0 +1,1136 @@
+[
+  {
+    "path": "data/generated/00000000000017-capture-03-genuine.png",
+    "source": "00000000000017/genuine/capture-03.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "genuine",
+    "label": 0,
+    "score": 0.8423078060150146
+  },
+  {
+    "path": "data/generated/00000000000017-capture-03-hue.png",
+    "source": "00000000000017/genuine/capture-03.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "hue",
+    "label": 1,
+    "score": 0.7897970080375671
+  },
+  {
+    "path": "data/generated/00000000000017-capture-03-ink_bleed.png",
+    "source": "00000000000017/genuine/capture-03.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "ink_bleed",
+    "label": 1,
+    "score": 0.39834287762641907
+  },
+  {
+    "path": "data/generated/00000000000017-capture-03-reprint.png",
+    "source": "00000000000017/genuine/capture-03.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "reprint",
+    "label": 1,
+    "score": 0.5303599163889885
+  },
+  {
+    "path": "data/generated/00000000000017-capture-03-stamp.png",
+    "source": "00000000000017/genuine/capture-03.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "stamp",
+    "label": 1,
+    "score": 0.828603595495224
+  },
+  {
+    "path": "data/generated/00000000000017-capture-03-resolution.png",
+    "source": "00000000000017/genuine/capture-03.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "resolution",
+    "label": 1,
+    "score": 0.40606001019477844
+  },
+  {
+    "path": "data/generated/00000000000017-capture-03-halftone.png",
+    "source": "00000000000017/genuine/capture-03.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "halftone",
+    "label": 1,
+    "score": 0.49883196502923965
+  },
+  {
+    "path": "data/generated/00000000000017-capture-05-genuine.png",
+    "source": "00000000000017/genuine/capture-05.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "genuine",
+    "label": 0,
+    "score": 0.8880324363708496
+  },
+  {
+    "path": "data/generated/00000000000017-capture-05-hue.png",
+    "source": "00000000000017/genuine/capture-05.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "hue",
+    "label": 1,
+    "score": 0.9115540683269501
+  },
+  {
+    "path": "data/generated/00000000000017-capture-05-ink_bleed.png",
+    "source": "00000000000017/genuine/capture-05.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "ink_bleed",
+    "label": 1,
+    "score": 0.3963417187333107
+  },
+  {
+    "path": "data/generated/00000000000017-capture-05-reprint.png",
+    "source": "00000000000017/genuine/capture-05.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "reprint",
+    "label": 1,
+    "score": 0.4999676551633456
+  },
+  {
+    "path": "data/generated/00000000000017-capture-05-stamp.png",
+    "source": "00000000000017/genuine/capture-05.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "stamp",
+    "label": 1,
+    "score": 0.8173313736915588
+  },
+  {
+    "path": "data/generated/00000000000017-capture-05-resolution.png",
+    "source": "00000000000017/genuine/capture-05.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "resolution",
+    "label": 1,
+    "score": 0.401010662317276
+  },
+  {
+    "path": "data/generated/00000000000017-capture-05-halftone.png",
+    "source": "00000000000017/genuine/capture-05.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "halftone",
+    "label": 1,
+    "score": 0.45589885488152504
+  },
+  {
+    "path": "data/generated/00000000000017-capture-14-genuine.png",
+    "source": "00000000000017/genuine/capture-14.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "genuine",
+    "label": 0,
+    "score": 0.8521897494792938
+  },
+  {
+    "path": "data/generated/00000000000017-capture-14-hue.png",
+    "source": "00000000000017/genuine/capture-14.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "hue",
+    "label": 1,
+    "score": 0.9173015356063843
+  },
+  {
+    "path": "data/generated/00000000000017-capture-14-ink_bleed.png",
+    "source": "00000000000017/genuine/capture-14.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "ink_bleed",
+    "label": 1,
+    "score": 0.3996883034706116
+  },
+  {
+    "path": "data/generated/00000000000017-capture-14-reprint.png",
+    "source": "00000000000017/genuine/capture-14.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "reprint",
+    "label": 1,
+    "score": 0.5298371780663729
+  },
+  {
+    "path": "data/generated/00000000000017-capture-14-stamp.png",
+    "source": "00000000000017/genuine/capture-14.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "stamp",
+    "label": 1,
+    "score": 0.8283199667930603
+  },
+  {
+    "path": "data/generated/00000000000017-capture-14-resolution.png",
+    "source": "00000000000017/genuine/capture-14.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "resolution",
+    "label": 1,
+    "score": 0.40348535776138306
+  },
+  {
+    "path": "data/generated/00000000000017-capture-14-halftone.png",
+    "source": "00000000000017/genuine/capture-14.jpg",
+    "gtin": "00000000000017",
+    "split": "validation",
+    "defect": "halftone",
+    "label": 1,
+    "score": 0.47985223308205605
+  },
+  {
+    "path": "data/generated/00000000000017-capture-07-genuine.png",
+    "source": "00000000000017/genuine/capture-07.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "genuine",
+    "label": 0,
+    "score": 0.832107663154602
+  },
+  {
+    "path": "data/generated/00000000000017-capture-07-hue.png",
+    "source": "00000000000017/genuine/capture-07.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "hue",
+    "label": 1,
+    "score": 0.6845758706331253
+  },
+  {
+    "path": "data/generated/00000000000017-capture-07-ink_bleed.png",
+    "source": "00000000000017/genuine/capture-07.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "ink_bleed",
+    "label": 1,
+    "score": 0.3986354023218155
+  },
+  {
+    "path": "data/generated/00000000000017-capture-07-reprint.png",
+    "source": "00000000000017/genuine/capture-07.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "reprint",
+    "label": 1,
+    "score": 0.5345667190849781
+  },
+  {
+    "path": "data/generated/00000000000017-capture-07-stamp.png",
+    "source": "00000000000017/genuine/capture-07.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "stamp",
+    "label": 1,
+    "score": 0.8177964687347412
+  },
+  {
+    "path": "data/generated/00000000000017-capture-07-resolution.png",
+    "source": "00000000000017/genuine/capture-07.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "resolution",
+    "label": 1,
+    "score": 0.40930384397506714
+  },
+  {
+    "path": "data/generated/00000000000017-capture-07-halftone.png",
+    "source": "00000000000017/genuine/capture-07.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "halftone",
+    "label": 1,
+    "score": 0.47002965211868286
+  },
+  {
+    "path": "data/generated/00000000000017-capture-04-genuine.png",
+    "source": "00000000000017/genuine/capture-04.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "genuine",
+    "label": 0,
+    "score": 0.8331266641616821
+  },
+  {
+    "path": "data/generated/00000000000017-capture-04-hue.png",
+    "source": "00000000000017/genuine/capture-04.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "hue",
+    "label": 1,
+    "score": 0.7718961834907532
+  },
+  {
+    "path": "data/generated/00000000000017-capture-04-ink_bleed.png",
+    "source": "00000000000017/genuine/capture-04.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "ink_bleed",
+    "label": 1,
+    "score": 0.3998556584119797
+  },
+  {
+    "path": "data/generated/00000000000017-capture-04-reprint.png",
+    "source": "00000000000017/genuine/capture-04.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "reprint",
+    "label": 1,
+    "score": 0.47952162101864815
+  },
+  {
+    "path": "data/generated/00000000000017-capture-04-stamp.png",
+    "source": "00000000000017/genuine/capture-04.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "stamp",
+    "label": 1,
+    "score": 0.8242184817790985
+  },
+  {
+    "path": "data/generated/00000000000017-capture-04-resolution.png",
+    "source": "00000000000017/genuine/capture-04.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "resolution",
+    "label": 1,
+    "score": 0.4080430269241333
+  },
+  {
+    "path": "data/generated/00000000000017-capture-04-halftone.png",
+    "source": "00000000000017/genuine/capture-04.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "halftone",
+    "label": 1,
+    "score": 0.45614298433065414
+  },
+  {
+    "path": "data/generated/00000000000017-capture-10-genuine.png",
+    "source": "00000000000017/genuine/capture-10.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "genuine",
+    "label": 0,
+    "score": 0.8353269398212433
+  },
+  {
+    "path": "data/generated/00000000000017-capture-10-hue.png",
+    "source": "00000000000017/genuine/capture-10.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "hue",
+    "label": 1,
+    "score": 0.9191725552082062
+  },
+  {
+    "path": "data/generated/00000000000017-capture-10-ink_bleed.png",
+    "source": "00000000000017/genuine/capture-10.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "ink_bleed",
+    "label": 1,
+    "score": 0.39974547177553177
+  },
+  {
+    "path": "data/generated/00000000000017-capture-10-reprint.png",
+    "source": "00000000000017/genuine/capture-10.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "reprint",
+    "label": 1,
+    "score": 0.4883992774412036
+  },
+  {
+    "path": "data/generated/00000000000017-capture-10-stamp.png",
+    "source": "00000000000017/genuine/capture-10.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "stamp",
+    "label": 1,
+    "score": 0.8202733993530273
+  },
+  {
+    "path": "data/generated/00000000000017-capture-10-resolution.png",
+    "source": "00000000000017/genuine/capture-10.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "resolution",
+    "label": 1,
+    "score": 0.406155988574028
+  },
+  {
+    "path": "data/generated/00000000000017-capture-10-halftone.png",
+    "source": "00000000000017/genuine/capture-10.jpg",
+    "gtin": "00000000000017",
+    "split": "test",
+    "defect": "halftone",
+    "label": 1,
+    "score": 0.4448435567319393
+  },
+  {
+    "path": "data/generated/00000000000024-capture-01-genuine.png",
+    "source": "00000000000024/genuine/capture-01.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "genuine",
+    "label": 0,
+    "score": 0.9500447809696198
+  },
+  {
+    "path": "data/generated/00000000000024-capture-01-hue.png",
+    "source": "00000000000024/genuine/capture-01.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "hue",
+    "label": 1,
+    "score": 0.7979922294616699
+  },
+  {
+    "path": "data/generated/00000000000024-capture-01-ink_bleed.png",
+    "source": "00000000000024/genuine/capture-01.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "ink_bleed",
+    "label": 1,
+    "score": 0.33528903126716614
+  },
+  {
+    "path": "data/generated/00000000000024-capture-01-reprint.png",
+    "source": "00000000000024/genuine/capture-01.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "reprint",
+    "label": 1,
+    "score": 0.5599739961326122
+  },
+  {
+    "path": "data/generated/00000000000024-capture-01-stamp.png",
+    "source": "00000000000024/genuine/capture-01.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "stamp",
+    "label": 1,
+    "score": 0.818627268075943
+  },
+  {
+    "path": "data/generated/00000000000024-capture-01-resolution.png",
+    "source": "00000000000024/genuine/capture-01.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "resolution",
+    "label": 1,
+    "score": 0.28086258471012115
+  },
+  {
+    "path": "data/generated/00000000000024-capture-01-halftone.png",
+    "source": "00000000000024/genuine/capture-01.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "halftone",
+    "label": 1,
+    "score": 0.2881094217300415
+  },
+  {
+    "path": "data/generated/00000000000024-capture-06-genuine.png",
+    "source": "00000000000024/genuine/capture-06.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "genuine",
+    "label": 0,
+    "score": 0.9495955109596252
+  },
+  {
+    "path": "data/generated/00000000000024-capture-06-hue.png",
+    "source": "00000000000024/genuine/capture-06.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "hue",
+    "label": 1,
+    "score": 0.579338975250721
+  },
+  {
+    "path": "data/generated/00000000000024-capture-06-ink_bleed.png",
+    "source": "00000000000024/genuine/capture-06.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "ink_bleed",
+    "label": 1,
+    "score": 0.33724330365657806
+  },
+  {
+    "path": "data/generated/00000000000024-capture-06-reprint.png",
+    "source": "00000000000024/genuine/capture-06.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "reprint",
+    "label": 1,
+    "score": 0.5597912035882473
+  },
+  {
+    "path": "data/generated/00000000000024-capture-06-stamp.png",
+    "source": "00000000000024/genuine/capture-06.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "stamp",
+    "label": 1,
+    "score": 0.8103105425834656
+  },
+  {
+    "path": "data/generated/00000000000024-capture-06-resolution.png",
+    "source": "00000000000024/genuine/capture-06.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "resolution",
+    "label": 1,
+    "score": 0.28300411999225616
+  },
+  {
+    "path": "data/generated/00000000000024-capture-06-halftone.png",
+    "source": "00000000000024/genuine/capture-06.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "halftone",
+    "label": 1,
+    "score": 0.30799415707588196
+  },
+  {
+    "path": "data/generated/00000000000024-capture-14-genuine.png",
+    "source": "00000000000024/genuine/capture-14.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "genuine",
+    "label": 0,
+    "score": 0.9418701231479645
+  },
+  {
+    "path": "data/generated/00000000000024-capture-14-hue.png",
+    "source": "00000000000024/genuine/capture-14.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "hue",
+    "label": 1,
+    "score": 0.8175392746925354
+  },
+  {
+    "path": "data/generated/00000000000024-capture-14-ink_bleed.png",
+    "source": "00000000000024/genuine/capture-14.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "ink_bleed",
+    "label": 1,
+    "score": 0.33268697559833527
+  },
+  {
+    "path": "data/generated/00000000000024-capture-14-reprint.png",
+    "source": "00000000000024/genuine/capture-14.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "reprint",
+    "label": 1,
+    "score": 0.5431135706603527
+  },
+  {
+    "path": "data/generated/00000000000024-capture-14-stamp.png",
+    "source": "00000000000024/genuine/capture-14.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "stamp",
+    "label": 1,
+    "score": 0.8169530034065247
+  },
+  {
+    "path": "data/generated/00000000000024-capture-14-resolution.png",
+    "source": "00000000000024/genuine/capture-14.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "resolution",
+    "label": 1,
+    "score": 0.2768161743879318
+  },
+  {
+    "path": "data/generated/00000000000024-capture-14-halftone.png",
+    "source": "00000000000024/genuine/capture-14.jpg",
+    "gtin": "00000000000024",
+    "split": "validation",
+    "defect": "halftone",
+    "label": 1,
+    "score": 0.33099669218063354
+  },
+  {
+    "path": "data/generated/00000000000024-capture-00-genuine.png",
+    "source": "00000000000024/genuine/capture-00.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "genuine",
+    "label": 0,
+    "score": 0.9429550766944885
+  },
+  {
+    "path": "data/generated/00000000000024-capture-00-hue.png",
+    "source": "00000000000024/genuine/capture-00.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "hue",
+    "label": 1,
+    "score": 0.7386557012796402
+  },
+  {
+    "path": "data/generated/00000000000024-capture-00-ink_bleed.png",
+    "source": "00000000000024/genuine/capture-00.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "ink_bleed",
+    "label": 1,
+    "score": 0.3342618942260742
+  },
+  {
+    "path": "data/generated/00000000000024-capture-00-reprint.png",
+    "source": "00000000000024/genuine/capture-00.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "reprint",
+    "label": 1,
+    "score": 0.580813892185688
+  },
+  {
+    "path": "data/generated/00000000000024-capture-00-stamp.png",
+    "source": "00000000000024/genuine/capture-00.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "stamp",
+    "label": 1,
+    "score": 0.8036353290081024
+  },
+  {
+    "path": "data/generated/00000000000024-capture-00-resolution.png",
+    "source": "00000000000024/genuine/capture-00.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "resolution",
+    "label": 1,
+    "score": 0.2824462801218033
+  },
+  {
+    "path": "data/generated/00000000000024-capture-00-halftone.png",
+    "source": "00000000000024/genuine/capture-00.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "halftone",
+    "label": 1,
+    "score": 0.3143538385629654
+  },
+  {
+    "path": "data/generated/00000000000024-capture-09-genuine.png",
+    "source": "00000000000024/genuine/capture-09.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "genuine",
+    "label": 0,
+    "score": 0.9456387162208557
+  },
+  {
+    "path": "data/generated/00000000000024-capture-09-hue.png",
+    "source": "00000000000024/genuine/capture-09.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "hue",
+    "label": 1,
+    "score": 0.7826051712036133
+  },
+  {
+    "path": "data/generated/00000000000024-capture-09-ink_bleed.png",
+    "source": "00000000000024/genuine/capture-09.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "ink_bleed",
+    "label": 1,
+    "score": 0.33597102761268616
+  },
+  {
+    "path": "data/generated/00000000000024-capture-09-reprint.png",
+    "source": "00000000000024/genuine/capture-09.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "reprint",
+    "label": 1,
+    "score": 0.5767194628715515
+  },
+  {
+    "path": "data/generated/00000000000024-capture-09-stamp.png",
+    "source": "00000000000024/genuine/capture-09.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "stamp",
+    "label": 1,
+    "score": 0.8154123425483704
+  },
+  {
+    "path": "data/generated/00000000000024-capture-09-resolution.png",
+    "source": "00000000000024/genuine/capture-09.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "resolution",
+    "label": 1,
+    "score": 0.27644965052604675
+  },
+  {
+    "path": "data/generated/00000000000024-capture-09-halftone.png",
+    "source": "00000000000024/genuine/capture-09.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "halftone",
+    "label": 1,
+    "score": 0.2992749810218811
+  },
+  {
+    "path": "data/generated/00000000000024-capture-11-genuine.png",
+    "source": "00000000000024/genuine/capture-11.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "genuine",
+    "label": 0,
+    "score": 0.9421850442886353
+  },
+  {
+    "path": "data/generated/00000000000024-capture-11-hue.png",
+    "source": "00000000000024/genuine/capture-11.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "hue",
+    "label": 1,
+    "score": 0.6097713932394981
+  },
+  {
+    "path": "data/generated/00000000000024-capture-11-ink_bleed.png",
+    "source": "00000000000024/genuine/capture-11.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "ink_bleed",
+    "label": 1,
+    "score": 0.3333378881216049
+  },
+  {
+    "path": "data/generated/00000000000024-capture-11-reprint.png",
+    "source": "00000000000024/genuine/capture-11.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "reprint",
+    "label": 1,
+    "score": 0.5981286317110062
+  },
+  {
+    "path": "data/generated/00000000000024-capture-11-stamp.png",
+    "source": "00000000000024/genuine/capture-11.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "stamp",
+    "label": 1,
+    "score": 0.8200956881046295
+  },
+  {
+    "path": "data/generated/00000000000024-capture-11-resolution.png",
+    "source": "00000000000024/genuine/capture-11.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "resolution",
+    "label": 1,
+    "score": 0.2764177769422531
+  },
+  {
+    "path": "data/generated/00000000000024-capture-11-halftone.png",
+    "source": "00000000000024/genuine/capture-11.jpg",
+    "gtin": "00000000000024",
+    "split": "test",
+    "defect": "halftone",
+    "label": 1,
+    "score": 0.28241439163684845
+  },
+  {
+    "path": "data/generated/09506000134352-capture-10-genuine.png",
+    "source": "09506000134352/genuine/capture-10.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "genuine",
+    "label": 0,
+    "score": 0.9574209153652191
+  },
+  {
+    "path": "data/generated/09506000134352-capture-10-hue.png",
+    "source": "09506000134352/genuine/capture-10.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "hue",
+    "label": 1,
+    "score": 0.5921814143657684
+  },
+  {
+    "path": "data/generated/09506000134352-capture-10-ink_bleed.png",
+    "source": "09506000134352/genuine/capture-10.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "ink_bleed",
+    "label": 1,
+    "score": 0.3891573026776314
+  },
+  {
+    "path": "data/generated/09506000134352-capture-10-reprint.png",
+    "source": "09506000134352/genuine/capture-10.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "reprint",
+    "label": 1,
+    "score": 0.5930769816040993
+  },
+  {
+    "path": "data/generated/09506000134352-capture-10-stamp.png",
+    "source": "09506000134352/genuine/capture-10.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "stamp",
+    "label": 1,
+    "score": 0.8247438371181488
+  },
+  {
+    "path": "data/generated/09506000134352-capture-10-resolution.png",
+    "source": "09506000134352/genuine/capture-10.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "resolution",
+    "label": 1,
+    "score": 0.40627652406692505
+  },
+  {
+    "path": "data/generated/09506000134352-capture-10-halftone.png",
+    "source": "09506000134352/genuine/capture-10.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "halftone",
+    "label": 1,
+    "score": 0.32819144427776337
+  },
+  {
+    "path": "data/generated/09506000134352-capture-00-genuine.png",
+    "source": "09506000134352/genuine/capture-00.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "genuine",
+    "label": 0,
+    "score": 0.9454120099544525
+  },
+  {
+    "path": "data/generated/09506000134352-capture-00-hue.png",
+    "source": "09506000134352/genuine/capture-00.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "hue",
+    "label": 1,
+    "score": 0.47494930028915405
+  },
+  {
+    "path": "data/generated/09506000134352-capture-00-ink_bleed.png",
+    "source": "09506000134352/genuine/capture-00.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "ink_bleed",
+    "label": 1,
+    "score": 0.38635309785604477
+  },
+  {
+    "path": "data/generated/09506000134352-capture-00-reprint.png",
+    "source": "09506000134352/genuine/capture-00.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "reprint",
+    "label": 1,
+    "score": 0.5762667879462242
+  },
+  {
+    "path": "data/generated/09506000134352-capture-00-stamp.png",
+    "source": "09506000134352/genuine/capture-00.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "stamp",
+    "label": 1,
+    "score": 0.8271358907222748
+  },
+  {
+    "path": "data/generated/09506000134352-capture-00-resolution.png",
+    "source": "09506000134352/genuine/capture-00.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "resolution",
+    "label": 1,
+    "score": 0.4020318016409874
+  },
+  {
+    "path": "data/generated/09506000134352-capture-00-halftone.png",
+    "source": "09506000134352/genuine/capture-00.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "halftone",
+    "label": 1,
+    "score": 0.3115238547325134
+  },
+  {
+    "path": "data/generated/09506000134352-capture-02-genuine.png",
+    "source": "09506000134352/genuine/capture-02.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "genuine",
+    "label": 0,
+    "score": 0.9741662740707397
+  },
+  {
+    "path": "data/generated/09506000134352-capture-02-hue.png",
+    "source": "09506000134352/genuine/capture-02.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "hue",
+    "label": 1,
+    "score": 0.5926873460412025
+  },
+  {
+    "path": "data/generated/09506000134352-capture-02-ink_bleed.png",
+    "source": "09506000134352/genuine/capture-02.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "ink_bleed",
+    "label": 1,
+    "score": 0.3878994882106781
+  },
+  {
+    "path": "data/generated/09506000134352-capture-02-reprint.png",
+    "source": "09506000134352/genuine/capture-02.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "reprint",
+    "label": 1,
+    "score": 0.6105976700782776
+  },
+  {
+    "path": "data/generated/09506000134352-capture-02-stamp.png",
+    "source": "09506000134352/genuine/capture-02.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "stamp",
+    "label": 1,
+    "score": 0.8336585462093353
+  },
+  {
+    "path": "data/generated/09506000134352-capture-02-resolution.png",
+    "source": "09506000134352/genuine/capture-02.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "resolution",
+    "label": 1,
+    "score": 0.4070417433977127
+  },
+  {
+    "path": "data/generated/09506000134352-capture-02-halftone.png",
+    "source": "09506000134352/genuine/capture-02.jpg",
+    "gtin": "09506000134352",
+    "split": "validation",
+    "defect": "halftone",
+    "label": 1,
+    "score": 0.31374014914035797
+  },
+  {
+    "path": "data/generated/09506000134352-capture-13-genuine.png",
+    "source": "09506000134352/genuine/capture-13.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "genuine",
+    "label": 0,
+    "score": 0.9430091083049774
+  },
+  {
+    "path": "data/generated/09506000134352-capture-13-hue.png",
+    "source": "09506000134352/genuine/capture-13.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "hue",
+    "label": 1,
+    "score": 0.4896192019805312
+  },
+  {
+    "path": "data/generated/09506000134352-capture-13-ink_bleed.png",
+    "source": "09506000134352/genuine/capture-13.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "ink_bleed",
+    "label": 1,
+    "score": 0.3903355970978737
+  },
+  {
+    "path": "data/generated/09506000134352-capture-13-reprint.png",
+    "source": "09506000134352/genuine/capture-13.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "reprint",
+    "label": 1,
+    "score": 0.5975928604602814
+  },
+  {
+    "path": "data/generated/09506000134352-capture-13-stamp.png",
+    "source": "09506000134352/genuine/capture-13.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "stamp",
+    "label": 1,
+    "score": 0.810020923614502
+  },
+  {
+    "path": "data/generated/09506000134352-capture-13-resolution.png",
+    "source": "09506000134352/genuine/capture-13.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "resolution",
+    "label": 1,
+    "score": 0.40212565660476685
+  },
+  {
+    "path": "data/generated/09506000134352-capture-13-halftone.png",
+    "source": "09506000134352/genuine/capture-13.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "halftone",
+    "label": 1,
+    "score": 0.3703550398349762
+  },
+  {
+    "path": "data/generated/09506000134352-capture-12-genuine.png",
+    "source": "09506000134352/genuine/capture-12.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "genuine",
+    "label": 0,
+    "score": 0.9505892693996429
+  },
+  {
+    "path": "data/generated/09506000134352-capture-12-hue.png",
+    "source": "09506000134352/genuine/capture-12.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "hue",
+    "label": 1,
+    "score": 0.5140725765377283
+  },
+  {
+    "path": "data/generated/09506000134352-capture-12-ink_bleed.png",
+    "source": "09506000134352/genuine/capture-12.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "ink_bleed",
+    "label": 1,
+    "score": 0.3878646045923233
+  },
+  {
+    "path": "data/generated/09506000134352-capture-12-reprint.png",
+    "source": "09506000134352/genuine/capture-12.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "reprint",
+    "label": 1,
+    "score": 0.6012570634484291
+  },
+  {
+    "path": "data/generated/09506000134352-capture-12-stamp.png",
+    "source": "09506000134352/genuine/capture-12.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "stamp",
+    "label": 1,
+    "score": 0.8365403413772583
+  },
+  {
+    "path": "data/generated/09506000134352-capture-12-resolution.png",
+    "source": "09506000134352/genuine/capture-12.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "resolution",
+    "label": 1,
+    "score": 0.401852622628212
+  },
+  {
+    "path": "data/generated/09506000134352-capture-12-halftone.png",
+    "source": "09506000134352/genuine/capture-12.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "halftone",
+    "label": 1,
+    "score": 0.3223472982645035
+  },
+  {
+    "path": "data/generated/09506000134352-capture-09-genuine.png",
+    "source": "09506000134352/genuine/capture-09.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "genuine",
+    "label": 0,
+    "score": 0.9420909285545349
+  },
+  {
+    "path": "data/generated/09506000134352-capture-09-hue.png",
+    "source": "09506000134352/genuine/capture-09.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "hue",
+    "label": 1,
+    "score": 0.4869903177022934
+  },
+  {
+    "path": "data/generated/09506000134352-capture-09-ink_bleed.png",
+    "source": "09506000134352/genuine/capture-09.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "ink_bleed",
+    "label": 1,
+    "score": 0.38674160838127136
+  },
+  {
+    "path": "data/generated/09506000134352-capture-09-reprint.png",
+    "source": "09506000134352/genuine/capture-09.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "reprint",
+    "label": 1,
+    "score": 0.5803872495889664
+  },
+  {
+    "path": "data/generated/09506000134352-capture-09-stamp.png",
+    "source": "09506000134352/genuine/capture-09.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "stamp",
+    "label": 1,
+    "score": 0.8335911333560944
+  },
+  {
+    "path": "data/generated/09506000134352-capture-09-resolution.png",
+    "source": "09506000134352/genuine/capture-09.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "resolution",
+    "label": 1,
+    "score": 0.4141736850142479
+  },
+  {
+    "path": "data/generated/09506000134352-capture-09-halftone.png",
+    "source": "09506000134352/genuine/capture-09.jpg",
+    "gtin": "09506000134352",
+    "split": "test",
+    "defect": "halftone",
+    "label": 1,
+    "score": 0.3107663094997406
+  }
+]
