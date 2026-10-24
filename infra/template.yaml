@@ -143,6 +143,9 @@ Resources:
             Ref: AlertTopic
           REQUIRE_AUTH: 'true'
           LOG_LEVEL: INFO
+          VISUAL_MODEL_MODULE: visual_model
+          VISUAL_MISMATCH_BELOW: '0.8423078060150146'
+          VISUAL_MATCH_AT: '0.8462605834007263'
       Events:
         Health:
           Type: HttpApi
