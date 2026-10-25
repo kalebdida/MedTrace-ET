@@ -55,13 +55,15 @@ jobs:
       - name: Full clone demo (manual runs with accounts only)
         if: github.event_name == 'workflow_dispatch' && inputs.adama_password != '' && inputs.dessie_password != ''
         env:
-          ADAMA_EMAIL: ${{ inputs.adama_email }}
-          ADAMA_PASSWORD: ${{ inputs.adama_password }}
-          DESSIE_EMAIL: ${{ inputs.dessie_email }}
-          DESSIE_PASSWORD: ${{ inputs.dessie_password }}
           SUPABASE_URL: https://qzhumrpdwqkleilqdmbl.supabase.co
           SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6aHVtcnBkd3FrbGVpbHFkbWJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4ODc3MzcsImV4cCI6MjEwODQ2MzczN30.c7WMDFzD4S2XAGWSuQIgf3NzppWejoxdg-1jqESj-vA
         run: |
-          echo "::add-mask::$ADAMA_PASSWORD"; echo "::add-mask::$DESSIE_PASSWORD"
+          # Read credentials from the event payload so they never appear in
+          # the step's printed script or environment listing.
+          for key in adama_email adama_password dessie_email dessie_password; do
+            value=$(jq -r ".inputs.$key // empty" "$GITHUB_EVENT_PATH")
+            case $key in *password) echo "::add-mask::$value";; esac
+            export "${key^^}=$value"
+          done
           pip install -q httpx==0.28.1
           bash scripts/run-demo.sh
