@@ -368,3 +368,7 @@ curl -s localhost:9000/2015-03-31/functions/function/invocations -d @backend/eve
 - **Location trust**: the site is bound to the signed-in account, but GPS coordinates still come from the phone and could be spoofed by a compromised device. A next step is to compare them with each site's registered location.
 - **Packaging photos**: only the photo's SHA-256 is kept. Storing intercepted counterfeit photos in S3 as evidence for EFDA would need a bucket and `s3:PutObject`.
 - **History window**: clone checks compare against the last `HISTORY_LIMIT` (25) scans, and `/history` returns at most 500 records.
+
+## Free hosting alternative
+
+[Hugging Face Spaces + Supabase setup](../docs/FREE_DEPLOY.md) preserves this Lambda API contract through `server.py`. DATABASE_URL selects Postgres; otherwise SCAN_TABLE_NAME selects DynamoDB. Webhook alerts are selected only when ALERT_TOPIC_ARN is absent. Supabase JWTs are verified before trusted site claims are mapped into the existing handler. AWS deployment remains supported.
