@@ -1,71 +1,78 @@
-# Free deployment: Supabase + Hugging Face
+# Free deployment: Render + Supabase + GitHub Actions
 
-Use the free Supabase plan and HF CPU Basic Space; do not select paid hardware. Free quotas and provider policies can change. The repository still supports AWS through infra/README.md. The synthetic packaging model's limitations are documented in ml/README.md.
+The live system runs entirely on free plans with no credit card. The AWS path (Lambda container, DynamoDB, Cognito, SNS, CloudWatch) remains fully supported through [infra/README.md](../infra/README.md); the backend code is the same in both and picks its adapters from environment variables.
 
-## 1. Create Supabase and the database
+| Live component | URL |
+|---|---|
+| Web app (pharmacists, inspectors) | https://medtrace-app.onrender.com |
+| API | https://medtrace-et.onrender.com (`/health`, `/parse`, `/scan`, `/history`, `/metrics`) |
+| Live checks (every 10 min) | GitHub → Actions → **Live check** |
 
-1. Sign in at supabase.com/dashboard. Choose New project, a free organization, a project name and a strong database administrator password. Save that password securely and wait for provisioning.
-2. In the project sidebar open SQL Editor → New query. Copy the complete contents of [001_scan_audit.sql](../supabase/migrations/001_scan_audit.sql), paste and Run. It is repeatable.
-3. In another private SQL Editor query run `ALTER ROLE medtrace_app PASSWORD 'YOUR_NEW_STRONG_PASSWORD';` with a password you generate. Never commit this query or password. The app role only has INSERT/SELECT access. The trigger rejects UPDATE, DELETE and TRUNCATE even by the table owner; a database administrator can still change/drop the trigger, so protect administrator credentials.
-4. Click Connect at the top of the project dashboard → Connection string → Session pooler. Copy the URI, use username `medtrace_app.PROJECT_REF` in place of `postgres.PROJECT_REF`, and replace the password with the app-role password (URL-encode special characters). Keep the pooler hostname and database name shown by Supabase. Add `?sslmode=require` if there is no query string. This is DATABASE_URL. The shared pooler supports IPv4; avoid the IPv6-only direct URL if your Space cannot reach it. Use session mode, port 5432.
-5. Project Settings → Data API: copy Project URL as SUPABASE_URL. Project Settings → API Keys → Legacy anon/service_role keys: copy anon as SUPABASE_ANON_KEY for the local demo. Copy service_role as SUPABASE_SERVICE_ROLE_KEY **on your own computer only**. It bypasses authorization; never put it in the Space, GitHub, browser app, or chat. If the dashboard separates API URL and keys, use the Connect dialog's App Framework/API section for the URL.
-6. Project Settings → JWT Keys: if using the legacy shared JWT secret, reveal/copy it as SUPABASE_JWT_SECRET. For asymmetric signing keys, omit that secret: the server automatically verifies RS256/ES256 tokens using the project's `/auth/v1/.well-known/jwks.json`. SUPABASE_URL is required in either case; issuer, audience, expiration and signature are checked.
-7. Authentication → Providers → Email: enable email/password sign-in. Demo users are admin-created and email-confirmed, so no email delivery is needed. Only trusted administrators set `app_metadata.site_id`; user_metadata is ignored.
+| AWS service | Free replacement | How the guarantee is kept |
+|---|---|---|
+| Lambda + API Gateway | **Render** web service running `backend/Dockerfile.server` (FastAPI bridge to the same `lambda_handler`) | Same routing, validation and verdict code |
+| Cognito + JWT authorizer | **Supabase Auth**; `server.py` verifies each JWT (HS256 secret or RS256/ES256 via JWKS; issuer, audience, expiry) | Site comes from `app_metadata.site_id`, which users cannot edit |
+| DynamoDB append-only log | **Supabase Postgres** `scan_audit` | App role has only INSERT/SELECT; a trigger rejects UPDATE/DELETE/TRUNCATE; same SHA-256 hash chain and `(pk, seq)` conflict detection |
+| SNS | **ntfy.sh** push (and/or a Discord webhook) | Delivery failure never loses the scan; `alert_sent` reports it |
+| CloudWatch metrics/alarms | `/metrics` counters + latency percentiles, Render logs (EMF JSON lines), **Live check** workflow (GitHub emails on failure) | |
+| S3/ECR static hosting | **Render static site** for `/frontend` | |
+| SAM + GitHub Actions deploy | Render auto-deploys `main`; **Test and deploy** runs the full test suite (with a Postgres service container) on every push | |
+| Budget alarm | Not needed: no payment method is on file with any provider, so nothing can be billed. Free-plan limits are hard caps. | |
 
-## 2. Create Hugging Face Space
+## Reproduce from scratch
 
-1. Sign in at huggingface.co → profile menu → New Space. Name it `medtrace`; choose Docker SDK, public visibility and free CPU Basic hardware. Record `YOUR_USERNAME/medtrace` as HF_SPACE_ID. An empty Space may show a build error until the first sync.
-2. Space → Settings → Variables and secrets → New secret: add DATABASE_URL and SUPABASE_URL from step 1, and SUPABASE_JWT_SECRET only for legacy signing. Add REQUIRE_AUTH=`true` as a variable. Do not add AWS keys or the Supabase service-role key. The image enables the packaged visual model and its calibrated demo thresholds.
-3. HF profile → Settings → Access Tokens → Create new token. Use a write token (or fine-grained write access to this Space). Copy it securely.
-4. GitHub repository → Settings → Secrets and variables → Actions → Secrets → New repository secret: HF_TOKEN. On Variables → New repository variable: HF_SPACE_ID = `YOUR_USERNAME/medtrace`.
+### 1. Supabase (database and sign-in)
 
-## 3. Enable clone alerts
+1. supabase.com → **New project** (free). Save the database password.
+2. **SQL Editor** → paste [supabase/migrations/001_scan_audit.sql](../supabase/migrations/001_scan_audit.sql) → **Run**.
+3. In SQL Editor, run `ALTER ROLE medtrace_app WITH PASSWORD '<new strong password>';` (do not commit it).
+4. **Connect** (plug icon at the top) → *Transaction pooler*. Build `DATABASE_URL` as `postgresql://medtrace_app.<PROJECT_REF>:<password>@<pooler host>:6543/postgres`, using the host shown there.
+5. **Project Settings → API keys**: copy the project URL (`SUPABASE_URL`) and the anon key (public; used by the web app). **JWT Keys**: if the project uses the legacy shared secret, copy it as `SUPABASE_JWT_SECRET`; for asymmetric keys nothing is needed (JWKS is fetched automatically).
+6. Create pharmacy accounts with `app_metadata.site_id` set (`scripts/create-demo-users.py` with the service-role key on your own computer only, or Authentication → Users and then set `raw_app_meta_data` in SQL).
 
-1. Discord: open your private channel → Edit Channel → Integrations → Webhooks → New Webhook → Copy Webhook URL. Add it to HF Space secrets as DISCORD_WEBHOOK_URL.
-2. Alternatively choose a long random topic name on ntfy.sh and set NTFY_TOPIC_URL=`https://ntfy.sh/YOUR_RANDOM_TOPIC` as a Space secret. Subscribe using the ntfy app or website. Public ntfy topics are not authenticated private storage: anyone knowing the topic can read/publish. Avoid sensitive patient data; Discord access should also be restricted.
-3. Both may be set. The backend attempts both; alert_sent is false if either delivery fails. HTTP errors/timeouts never discard scans.
+### 2. Render (API and web app)
 
-## 4. Deploy and check
+1. render.com → **New → Web Service** → this repository, branch `main`, runtime **Docker**, Dockerfile `backend/Dockerfile.server`, Docker context `backend`, plan **Free**.
+2. **Environment**: `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_JWT_SECRET` (legacy keys only), `REQUIRE_AUTH=true`, and optionally `NTFY_TOPIC_URL=https://ntfy.sh/<long-random-topic>` and/or `DISCORD_WEBHOOK_URL`.
+3. **New → Static Site** → same repository, build command `cd frontend && npm ci && npm run build`, publish directory `frontend/dist`, env `VITE_API_URL=<the web service URL>` and `VITE_SUPABASE_URL`.
+4. Both redeploy automatically on every push to `main`.
 
-1. Push to main, or GitHub → Actions → Test and deploy → Run workflow → main. Tests run before deployment. Without AWS_DEPLOY_ROLE_ARN, AWS deployment is skipped. Without HF_TOKEN/HF_SPACE_ID, HF deployment is skipped until configured.
-2. Open the deploy-hf job. It uploads only server files and model artifacts, waits up to 20 minutes and checks health and barcode parsing. Check HF Space → Logs for build/runtime failures. Copy the direct `https://...hf.space` URL shown by the job as API_URL. Do not guess the subdomain for usernames containing hyphens.
-3. Open API_URL/health. Confirm audit_log_configured, auth_required and visual_model_loaded are true. Health reports configuration, not a successful database query: the authenticated demo below verifies storage.
-4. Open API_URL/metrics for aggregate counters and rolling latency percentiles. Metrics reset on restart and retain the latest 10,000 latencies. One uvicorn worker keeps a single counter set. EMF JSON remains in Space logs; no patient details are returned by /metrics.
+### 3. Keep it awake and monitored
 
-## 5. Create users and demonstrate
+Render's free web services sleep after 15 minutes without traffic. The **Live check** workflow (`.github/workflows/live-check.yml`) requests `/health` every 10 minutes, so the API stays warm, and on each run checks `/health`, public `/parse`, that `/scan` rejects unsigned requests (401) and that the web app responds. A failure emails the repository owner. Scheduled workflows run from the repository's **default branch**, which must contain this file.
 
-On your computer install Python and run `pip install httpx==0.28.1`. In a terminal set SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, ADAMA_PASSWORD and DESSIE_PASSWORD as environment variables using your shell's secure workflow. Choose passwords satisfying the project's policy. Never paste credentials into GitHub files or enable shell tracing.
+Manual runs (Actions → Live check → Run workflow) accept two pharmacy accounts and run the full clone demo against production: an Adama scan must PASS, the same serial in Dessie 50 minutes later must FAIL with `IMPOSSIBLE_TRAVEL`, and the audit chain must verify. Credentials are read from the event payload and masked, never printed.
 
-Run `python scripts/create-demo-users.py` from the repository root. It creates `pharmacist-adama@medtrace.example` and `pharmacist-dessie@medtrace.example` with administrative site metadata. Existing users cause a clear error; inspect them in Supabase Authentication → Users rather than silently changing accounts. Remove the service-role key from your shell after this operation.
+### 4. Clone alerts
 
-Set API_URL, SUPABASE_URL, SUPABASE_ANON_KEY and both passwords, then run `bash scripts/run-demo.sh` (Windows: Git Bash or WSL). It signs in both accounts, sends Adama then Dessie scans under a new serial, and prints verdict, flags, alert_sent and chain.valid. The timestamps are 50 minutes apart ending now. Expect the Dessie scan to flag IMPOSSIBLE_TRAVEL and the two-record chain to verify.
+Subscribe to the ntfy topic in the ntfy app (Android/iOS) or at `https://ntfy.sh/<topic>`. Anyone who knows the topic name can read it, so use a long random name and never include patient data. A Discord webhook can be added in parallel.
 
-## 6. Before the demo and cleanup
+## Limits of the free tier
 
-Free CPU Spaces normally sleep after 48 hours of inactivity; policies may change. Open /health before demoing and wait for wake-up. Supabase free projects can also pause after inactivity: resume through its dashboard when needed. Keep an eye on free quotas. Space disk is ephemeral; audit records persist in Supabase. To retire the demo, delete the Space and Supabase project after exporting any audit records you need; revoke the HF token and remove GitHub secrets.
+- First request after a sleep takes about a minute (mitigated by the 10-minute live check).
+- Supabase free projects pause after a week without activity; resume from the dashboard.
+- `/metrics` counters are in memory and reset on each redeploy; durable history is the audit table and Render's log retention.
+- Free plans and their limits can change.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
- Phone -->|Supabase JWT| HF[HF Spaces Docker / FastAPI]
- Auth[Supabase Auth] --> Phone
- HF --> Core[Existing Lambda handler and ONNX model]
- Core --> DB[Supabase Postgres immutable audit]
- Core --> Alerts[Discord / ntfy]
- Core --> Logs[Space logs and /metrics]
- GitHub[GitHub Actions] --> HF
+  subgraph Phone["Pharmacist / inspector phone"]
+    App["Web app (React PWA)<br/>camera DataMatrix scan, GPS, photo"]
+  end
+  Auth["Supabase Auth<br/>JWT with app_metadata.site_id"]
+  subgraph Render["Render (free)"]
+    API["FastAPI bridge<br/>verifies JWT"]
+    Core["lambda_handler<br/>GS1 parser · travel/dispense clone rules<br/>ONNX packaging model (CPU)"]
+  end
+  DB[("Supabase Postgres<br/>append-only, hash-chained scan_audit")]
+  Ntfy["ntfy.sh / Discord<br/>clone alerts"]
+  GH["GitHub Actions<br/>tests on push · live check every 10 min"]
+
+  App -- "sign in" --> Auth
+  App -- "HTTPS + Bearer JWT" --> API --> Core
+  Core -- "INSERT/SELECT only" --> DB
+  Core -- "on clone" --> Ntfy
+  GH -- "health, parse, 401, clone demo" --> API
 ```
-
-| AWS path | Free deployment replacement |
-|---|---|
-| Lambda + API Gateway | HF Spaces Docker + FastAPI |
-| DynamoDB | Supabase Postgres with immutable trigger |
-| Cognito | Supabase Auth |
-| SNS | Discord webhook / ntfy |
-| CloudWatch | /metrics + Space logs |
-| SAM | Dockerfile + GitHub Actions + SQL migrations |
-
-## Local tests
-
-Install backend/requirements-dev.txt and backend/requirements-server.txt plus testcontainers==4.10.0. Run `cd backend && python -m pytest -q`. PostgreSQL tests use TEST_DATABASE_URL when supplied; otherwise they attempt a Docker PostgreSQL 16 container and skip if Docker/image startup is unavailable. CI supplies a real PostgreSQL service and must pass those tests. Use an isolated disposable test database: migration tests create a role/table/trigger. AWS-specific dependencies and tests remain intact.

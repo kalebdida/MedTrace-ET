@@ -371,4 +371,4 @@ curl -s localhost:9000/2015-03-31/functions/function/invocations -d @backend/eve
 
 ## Free hosting alternative
 
-[Hugging Face Spaces + Supabase setup](../docs/FREE_DEPLOY.md) preserves this Lambda API contract through `server.py`. DATABASE_URL selects Postgres; otherwise SCAN_TABLE_NAME selects DynamoDB. Webhook alerts are selected only when ALERT_TOPIC_ARN is absent. Supabase JWTs are verified before trusted site claims are mapped into the existing handler. AWS deployment remains supported.
+[Render + Supabase setup](../docs/FREE_DEPLOY.md) preserves this Lambda API contract through `server.py`. DATABASE_URL selects Postgres; otherwise SCAN_TABLE_NAME selects DynamoDB. Webhook alerts are selected only when ALERT_TOPIC_ARN is absent. Supabase JWTs are verified before trusted site claims are mapped into the existing handler. AWS deployment remains supported.
