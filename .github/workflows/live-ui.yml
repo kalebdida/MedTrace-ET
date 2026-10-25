@@ -1,0 +1,42 @@
+name: Live UI check
+# Manual: drives the deployed web app in a real browser through the guided
+# clone demo (Adama PASS -> Dessie FAIL -> intact history) against the live API.
+on:
+  workflow_dispatch:
+    inputs:
+      adama_password:
+        description: "Password of adama@medtrace.demo"
+        required: true
+      dessie_password:
+        description: "Password of dessie@medtrace.demo"
+        required: true
+permissions:
+  contents: read
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Wake the API
+        run: |
+          for i in $(seq 1 18); do curl -sf -m 20 https://medtrace-et.onrender.com/health && exit 0; sleep 10; done; exit 1
+      - name: Guided clone demo on the live site
+        env:
+          FRONTEND_URL: https://medtrace-app.onrender.com
+        run: |
+          # Read passwords from the event payload so they never appear in the log.
+          export ADAMA_PASSWORD=$(jq -r .inputs.adama_password "$GITHUB_EVENT_PATH")
+          export DESSIE_PASSWORD=$(jq -r .inputs.dessie_password "$GITHUB_EVENT_PATH")
+          echo "::add-mask::$ADAMA_PASSWORD"; echo "::add-mask::$DESSIE_PASSWORD"
+          npm run test:live
