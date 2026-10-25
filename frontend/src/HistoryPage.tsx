@@ -1,97 +1,141 @@
-import { useEffect, useRef, useState } from "react";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-import { api, currentToken, type AuditEvent, type History } from "./api";
-
-function CloneMap({ events }: { events: AuditEvent[] }) {
-  const el = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const located = events.filter((e) => e.location);
-    if (!el.current || located.length === 0) return;
-    const map = L.map(el.current);
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: "© OpenStreetMap contributors",
-    }).addTo(map);
-    const byId = new Map(events.map((e) => [e.event_id, e]));
-    for (const e of located) {
-      const { lat, lon } = e.location!;
-      L.circleMarker([lat, lon], { radius: 8, color: e.verdict === "FAIL" ? "#dc2626" : "#0f766e" })
-        .addTo(map)
-        .bindPopup(`#${e.seq} ${e.site_id ?? ""}<br>${new Date(e.scanned_at).toLocaleString()}<br>${e.verdict}`);
-      // Draw the impossible journey the clone detector found.
-      for (const f of e.flags ?? []) {
-        const prior = byId.get(String(f.details?.prior_event_id ?? ""));
-        if (f.code === "IMPOSSIBLE_TRAVEL" && prior?.location) {
-          L.polyline([[prior.location.lat, prior.location.lon], [lat, lon]], { color: "#dc2626", dashArray: "6" }).addTo(map);
-        }
-      }
-    }
-    map.fitBounds(L.latLngBounds(located.map((e) => [e.location!.lat, e.location!.lon] as [number, number])).pad(0.3), {
-      maxZoom: 12,
-    });
-    return () => {
-      map.remove();
-    };
-  }, [events]);
-  return <div ref={el} className="map" />;
-}
-
-export function HistoryPage({ initial }: { initial?: { gtin: string; serial: string } }) {
-  const [gtin, setGtin] = useState(initial?.gtin ?? "");
-  const [serial, setSerial] = useState(initial?.serial ?? "");
-  const [history, setHistory] = useState<History | null>(null);
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-
-  async function load(g = gtin, s = serial) {
-    setError("");
-    setBusy(true);
-    try {
-      const q = new URLSearchParams({ gtin: g.trim(), serial: s.trim() });
-      setHistory(await api<History>(`/history?${q}`, {}, await currentToken()));
-    } catch (e) {
-      setHistory(null);
-      setError((e as Error).message);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  useEffect(() => {
-    if (initial) load(initial.gtin, initial.serial);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initial]);
-
+import { lazy, Suspense, useEffect, useState } from "react";
+import { api, currentToken, ApiError, type History } from "./api";
+import { useI18n } from "./i18n";
+import type { TranslationKey } from "./translations";
+const CloneMap = lazy(() => import("./CloneMap"));
+export function HistoryView({ history, autoMap = false }: { history: History; autoMap?: boolean }) {
+  const { t, language } = useI18n();
+  const [showMap, setShowMap] = useState(autoMap);
   return (
-    <div className="page">
-      <label>GTIN<input value={gtin} onChange={(e) => setGtin(e.target.value)} inputMode="numeric" /></label>
-      <label>Serial<input value={serial} onChange={(e) => setSerial(e.target.value)} /></label>
-      <button className="primary" disabled={!gtin || !serial || busy} onClick={() => load()}>
-        {busy ? "Loading…" : "Show history"}
-      </button>
-      {error && <p className="error">{error}</p>}
-      {history && (
+    <div className="history-results">
+      {history.scan_count === 0 ? (
+        <p>{t("noRecords")}</p>
+      ) : (
         <>
-          <p className={`badge ${history.chain.valid ? "ok" : "bad"}`}>
-            {history.chain.valid
-              ? `✓ Audit chain intact (${history.scan_count} records)`
-              : `✗ Audit chain TAMPERED at record #${history.chain.broken_at_seq}`}
-          </p>
-          <CloneMap events={history.events} />
+          <div className={`chain-status ${history.chain.valid ? "pass" : "fail"}`} role="status">
+            <span aria-hidden>{history.chain.valid ? "✓" : "!"}</span>
+            <div>
+              <strong>{t(history.chain.valid ? "intact" : "tampered")}</strong>
+              <small>
+                {history.scan_count} {t("records")}
+              </small>
+            </div>
+          </div>
+          {history.truncated && <p>{t("truncated")}</p>}
+          <section className="card">
+            <h2>{t("map")}</h2>
+            <p className="hint">{t("mapHint")}</p>
+            {showMap ? (
+              <Suspense fallback={<p>{t("loading")}</p>}>
+                <CloneMap events={history.events} />
+              </Suspense>
+            ) : (
+              <button className="secondary" onClick={() => setShowMap(true)}>
+                {t("loadMap")}
+              </button>
+            )}
+          </section>
           <ol className="timeline">
             {history.events.map((e) => (
               <li key={e.seq} className={e.verdict.toLowerCase()}>
-                <strong>#{e.seq} {e.event_type}</strong> at {e.site_id ?? "unknown site"}
-                <br />
-                <small>{new Date(e.scanned_at).toLocaleString()} · {e.verdict}</small>
-                {(e.flags ?? []).filter((f) => f.clone_indicator).map((f) => (
-                  <div key={f.code} className="error small">{f.message}</div>
-                ))}
+                <span className="timeline-number">{e.seq}</span>
+                <div>
+                  <div className="timeline-title">
+                    <strong>{e.site_id ?? t("unknownSite")}</strong>
+                    <span className="verdict-pill">{e.verdict}</span>
+                  </div>
+                  <p>
+                    {new Date(e.scanned_at).toLocaleString(language === "am" ? "am-ET" : "en-GB")} ·{" "}
+                    {e.event_type}
+                  </p>
+                  <p className="mono small">
+                    {e.location
+                      ? `${e.location.lat.toFixed(4)}, ${e.location.lon.toFixed(4)}`
+                      : t("noCoordinates")}
+                  </p>
+                  {(e.flags ?? [])
+                    .filter((f) => f.clone_indicator)
+                    .map((f) => (
+                      <details key={f.code}>
+                        <summary>{t("technical")}</summary>
+                        <p>{f.message}</p>
+                      </details>
+                    ))}
+                </div>
               </li>
             ))}
           </ol>
         </>
       )}
     </div>
+  );
+}
+export function HistoryPage({
+  initial,
+  inspector = false,
+}: {
+  initial?: { gtin: string; serial: string };
+  inspector?: boolean;
+}) {
+  const { t } = useI18n();
+  const [gtin, setGtin] = useState(initial?.gtin ?? "");
+  const [serial, setSerial] = useState(initial?.serial ?? "");
+  const [history, setHistory] = useState<History | null>(null);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+  async function load(g = gtin, s = serial) {
+    setError("");
+    setBusy(true);
+    setHistory(null);
+    try {
+      const q = new URLSearchParams({ gtin: g.trim(), serial: s.trim() });
+      setHistory(await api<History>(`/history?${q}`, {}, await currentToken()));
+    } catch (e) {
+      setError(e instanceof ApiError ? e.message : "requestFailed");
+    } finally {
+      setBusy(false);
+    }
+  }
+  useEffect(() => {
+    if (initial) void load(initial.gtin, initial.serial);
+  }, [initial]);
+  return (
+    <section className="page">
+      <div className="page-heading">
+        <span className="eyebrow">{t(inspector ? "inspector" : "history")}</span>
+        <h1>{t(inspector ? "inspectorTitle" : "historyTitle")}</h1>
+        <p>{t(inspector ? "inspectorHint" : "historyIntro")}</p>
+      </div>
+      <form
+        className="card lookup"
+        onSubmit={(e) => {
+          e.preventDefault();
+          void load();
+        }}
+      >
+        <label>
+          {t("gtin")}
+          <input
+            value={gtin}
+            onChange={(e) => setGtin(e.target.value)}
+            inputMode="numeric"
+            required
+          />
+        </label>
+        <label>
+          {t("serial")}
+          <input value={serial} onChange={(e) => setSerial(e.target.value)} required />
+        </label>
+        <button className="primary" disabled={busy || !gtin.trim() || !serial.trim()}>
+          {t(busy ? "loading" : "showHistory")} →
+        </button>
+      </form>
+      {error && (
+        <p className="error" role="alert">
+          {t(error as TranslationKey)}
+        </p>
+      )}
+      {history && <HistoryView history={history} />}
+    </section>
   );
 }

@@ -7,7 +7,14 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test:e2e": "playwright test",
+    "test:offline": "node scripts/check-offline.mjs",
+    "test:live": "node scripts/check-live.mjs",
+    "bundle:sizes": "node scripts/bundle-sizes.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.4",
@@ -16,16 +23,25 @@
     "bwip-js": "^4.5.1",
     "leaflet": "^1.9.4",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "three": "^0.186.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.64.1",
     "@testing-library/react": "^16.0.1",
     "@types/leaflet": "^1.9.14",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@types/three": "^0.186.0",
     "@vitejs/plugin-react": "^4.3.3",
+    "eslint": "^10.13.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "jsdom": "^25.0.1",
+    "prettier": "^3.9.10",
     "typescript": "^5.6.3",
+    "typescript-eslint": "^8.72.0",
     "vite": "^5.4.10",
     "vitest": "^2.1.4"
   }

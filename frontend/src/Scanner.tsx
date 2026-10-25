@@ -1,38 +1,93 @@
 import { useEffect, useRef, useState } from "react";
-import { BrowserMultiFormatReader } from "@zxing/browser";
+import { BrowserMultiFormatReader, type IScannerControls } from "@zxing/browser";
 import { BarcodeFormat, DecodeHintType } from "@zxing/library";
-
-/** Live camera DataMatrix scanner. ZXing emits GS1 FNC1 separators as ASCII 29, which the backend needs. */
-export function Scanner({ onScan, onClose }: { onScan: (text: string) => void; onClose: () => void }) {
+import { useI18n } from "./i18n";
+export function Scanner({
+  onScan,
+  onClose,
+}: {
+  onScan: (text: string) => void;
+  onClose: () => void;
+}) {
+  const { t } = useI18n();
   const video = useRef<HTMLVideoElement>(null);
-  const [error, setError] = useState("");
-
+  const controlsRef = useRef<IScannerControls>();
+  const [error, setError] = useState(false);
+  const [torch, setTorch] = useState(false);
+  const [supported, setSupported] = useState(false);
+  const [torchError, setTorchError] = useState(false);
   useEffect(() => {
+    let disposed = false;
+    let completed = false;
     const hints = new Map();
     hints.set(DecodeHintType.POSSIBLE_FORMATS, [BarcodeFormat.DATA_MATRIX, BarcodeFormat.QR_CODE]);
     hints.set(DecodeHintType.TRY_HARDER, true);
     const reader = new BrowserMultiFormatReader(hints);
-    let stop: (() => void) | undefined;
     reader
-      .decodeFromConstraints({ video: { facingMode: "environment" } }, video.current!, (result, _err, controls) => {
-        if (result) {
+      .decodeFromConstraints(
+        { video: { facingMode: "environment", width: { ideal: 1280 } }, audio: false },
+        video.current!,
+        (result, _err, controls) => {
+          if (disposed || completed || !result) return;
+          completed = true;
           controls.stop();
-          const format = result.getBarcodeFormat();
+          navigator.vibrate?.(80);
           const text = result.getText();
-          // GS1 DataMatrix: add the symbology prefix so the backend knows it is GS1.
-          onScan(format === BarcodeFormat.DATA_MATRIX && !text.startsWith("]") ? "]d2" + text : text);
+          onScan(
+            result.getBarcodeFormat() === BarcodeFormat.DATA_MATRIX && !text.startsWith("]")
+              ? "]d2" + text
+              : text,
+          );
+        },
+      )
+      .then((controls) => {
+        if (disposed) {
+          controls.stop();
+          return;
         }
+        controlsRef.current = controls;
+        setSupported(!!controls.switchTorch);
       })
-      .then((controls) => (stop = () => controls.stop()))
-      .catch(() => setError("Camera unavailable. Allow camera access, or type the barcode instead."));
-    return () => stop?.();
+      .catch(() => {
+        if (!disposed) setError(true);
+      });
+    return () => {
+      disposed = true;
+      controlsRef.current?.stop();
+      controlsRef.current = undefined;
+    };
   }, [onScan]);
-
+  async function toggle() {
+    try {
+      await controlsRef.current?.switchTorch?.(!torch);
+      setTorch(!torch);
+      setTorchError(false);
+    } catch {
+      setTorchError(true);
+    }
+  }
   return (
-    <div className="scanner">
-      {error ? <p className="error">{error}</p> : <video ref={video} muted playsInline />}
-      <p className="hint">Point the camera at the DataMatrix code on the pack.</p>
-      <button className="secondary" onClick={onClose}>Cancel</button>
-    </div>
+    <section className="scanner">
+      {error ? (
+        <p className="error" role="alert">
+          {t("cameraError")}
+        </p>
+      ) : (
+        <div className="viewfinder">
+          <video ref={video} muted playsInline />
+          <div className="target-box" aria-hidden />
+        </div>
+      )}
+      <p>{t("cameraHint")}</p>
+      {supported && !error && (
+        <button className="secondary" aria-pressed={torch} onClick={toggle}>
+          {t(torch ? "torchOff" : "torchOn")}
+        </button>
+      )}
+      {torchError && <p role="alert">{t("torchError")}</p>}
+      <button className="secondary" onClick={onClose}>
+        {t("cameraClose")}
+      </button>
+    </section>
   );
 }

@@ -1,13 +1,16 @@
 import { createClient } from "@supabase/supabase-js";
 
-export const API_URL = (import.meta.env.VITE_API_URL ?? "https://medtrace-et.onrender.com").replace(/\/$/, "");
-
-export const supabase = createClient(
-  import.meta.env.VITE_SUPABASE_URL ?? "https://qzhumrpdwqkleilqdmbl.supabase.co",
-  // The anon key is public by design; row-level access is enforced server-side.
-  import.meta.env.VITE_SUPABASE_ANON_KEY ??
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6aHVtcnBkd3FrbGVpbHFkbWJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4ODc3MzcsImV4cCI6MjEwODQ2MzczN30.c7WMDFzD4S2XAGWSuQIgf3NzppWejoxdg-1jqESj-vA",
+export const API_URL = (import.meta.env.VITE_API_URL ?? "https://medtrace-et.onrender.com").replace(
+  /\/$/,
+  "",
 );
+
+export const SUPABASE_URL =
+  import.meta.env.VITE_SUPABASE_URL ?? "https://qzhumrpdwqkleilqdmbl.supabase.co";
+export const SUPABASE_ANON_KEY =
+  import.meta.env.VITE_SUPABASE_ANON_KEY ??
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6aHVtcnBkd3FrbGVpbHFkbWJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4ODc3MzcsImV4cCI6MjEwODQ2MzczN30.c7WMDFzD4S2XAGWSuQIgf3NzppWejoxdg-1jqESj-vA";
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export type Flag = {
   code: string;
@@ -37,7 +40,14 @@ export type ScanResult = {
   flags: Flag[];
   product: Product;
   visual: { status: string; similarity: number | null } | null;
-  travel: { legs: { prior_site_id: string | null; distance_km: number; speed_kmh: number; impossible: boolean }[] } | null;
+  travel: {
+    legs: {
+      prior_site_id: string | null;
+      distance_km: number;
+      speed_kmh: number;
+      impossible: boolean;
+    }[];
+  } | null;
   audit: { pk: string; seq: number; record_hash: string };
   alert_sent: boolean;
 };
@@ -56,32 +66,60 @@ export type AuditEvent = {
 
 export type History = {
   identity: string;
+  truncated?: boolean;
   scan_count: number;
   chain: { valid: boolean; reason?: string; broken_at_seq?: number };
   events: AuditEvent[];
 };
 
 export class ApiError extends Error {
-  constructor(public status: number, message: string) {
+  constructor(
+    public status: number,
+    message: string,
+  ) {
     super(message);
   }
 }
 
-/** Calls the backend, attaching the signed-in user's token. Retries once, since a sleeping free server can drop the first request. */
-export async function api<T>(path: string, init: RequestInit = {}, token?: string | null, attempt = 0): Promise<T> {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (token) headers.Authorization = `Bearer ${token}`;
-  let res: Response;
+/** Retry only read-only operations: a lost POST /scan response may already have committed. */
+export async function api<T>(
+  path: string,
+  init: RequestInit = {},
+  token?: string | null,
+  attempt = 0,
+): Promise<T> {
+  const headers = new Headers(init.headers);
+  headers.set("Content-Type", "application/json");
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  init.signal?.addEventListener("abort", abort, { once: true });
+  if (init.signal?.aborted) controller.abort();
+  const timeout = setTimeout(() => controller.abort(), 90000);
+  const retryable = (init.method ?? "GET") === "GET" || path === "/parse";
   try {
-    res = await fetch(API_URL + path, { ...init, headers: { ...headers, ...(init.headers as Record<string, string>) } });
-  } catch {
-    if (attempt === 0) return api<T>(path, init, token, 1);
-    throw new ApiError(0, "Cannot reach the server. Check your connection.");
+    const res = await fetch(API_URL + path, { ...init, headers, signal: controller.signal });
+    if (retryable && attempt === 0 && [502, 503, 504].includes(res.status))
+      return api<T>(path, init, token, 1);
+    const text = await res.text();
+    let body: unknown;
+    try {
+      body = text ? JSON.parse(text) : null;
+    } catch {
+      throw new ApiError(res.status, "requestFailed");
+    }
+    if (!res.ok)
+      throw new ApiError(res.status, res.status === 401 ? "sessionExpired" : "requestFailed");
+    return body as T;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    if (init.signal?.aborted) throw error;
+    if (retryable && attempt === 0) return api<T>(path, init, token, 1);
+    throw new ApiError(0, retryable ? "networkError" : "ambiguous");
+  } finally {
+    clearTimeout(timeout);
+    init.signal?.removeEventListener("abort", abort);
   }
-  const text = await res.text();
-  const body = text ? JSON.parse(text) : null;
-  if (!res.ok) throw new ApiError(res.status, body?.error ?? `Request failed (${res.status})`);
-  return body as T;
 }
 
 export async function currentToken(): Promise<string | null> {

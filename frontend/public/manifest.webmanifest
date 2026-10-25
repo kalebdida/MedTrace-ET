@@ -1,0 +1,15 @@
+{
+  "id": "/",
+  "name": "MedTrace-ET",
+  "short_name": "MedTrace",
+  "description": "Medicine barcode verification and pack history",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f6f2",
+  "theme_color": "#006958",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

@@ -1,7 +1,10 @@
-import { useCallback, useState } from "react";
+import { lazy, Suspense, useCallback, useState } from "react";
 import { api, currentToken, type ScanResult } from "./api";
 import { ResultCard } from "./ResultCard";
-import { Scanner } from "./Scanner";
+import { useI18n } from "./i18n";
+import { ApiError } from "./api";
+import type { TranslationKey } from "./translations";
+const Scanner = lazy(() => import("./Scanner").then((m) => ({ default: m.Scanner })));
 import { SAMPLES, freshSerial, fromVisible, pharmaBarcode, visible } from "./samples";
 
 type Location = { lat: number; lon: number; accuracy_m: number };
@@ -17,7 +20,8 @@ function getLocation(): Promise<Location | null> {
   return new Promise((resolve) => {
     if (!navigator.geolocation) return resolve(null);
     navigator.geolocation.getCurrentPosition(
-      (p) => resolve({ lat: p.coords.latitude, lon: p.coords.longitude, accuracy_m: p.coords.accuracy }),
+      (p) =>
+        resolve({ lat: p.coords.latitude, lon: p.coords.longitude, accuracy_m: p.coords.accuracy }),
       () => resolve(null),
       { enableHighAccuracy: true, timeout: 10000 },
     );
@@ -27,15 +31,26 @@ function getLocation(): Promise<Location | null> {
 /** Downscales a phone photo to a JPEG under the backend's 1.5 MB limit; returns base64. */
 async function photoToBase64(file: File): Promise<string> {
   const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, 1280 / Math.max(bitmap.width, bitmap.height));
+  const scale = Math.min(1, 960 / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(bitmap.width * scale);
   canvas.height = Math.round(bitmap.height * scale);
   canvas.getContext("2d")!.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL("image/jpeg", 0.85).split(",")[1];
+  bitmap.close();
+  for (const quality of [0.75, 0.6, 0.45, 0.3]) {
+    const data = canvas.toDataURL("image/jpeg", quality).split(",")[1];
+    if ((data.length * 3) / 4 <= 80000) return data;
+  }
+  const reduced = document.createElement("canvas");
+  reduced.width = Math.max(1, Math.round(canvas.width / 2));
+  reduced.height = Math.max(1, Math.round(canvas.height / 2));
+  reduced.getContext("2d")!.drawImage(canvas, 0, 0, reduced.width, reduced.height);
+  return reduced.toDataURL("image/jpeg", 0.5).split(",")[1];
 }
 
 export function ScanPage({ onHistory }: { onHistory: (gtin: string, serial: string) => void }) {
+  const { t } = useI18n();
+  const [notice, setNotice] = useState(false);
   const [barcode, setBarcode] = useState("");
   const [eventType, setEventType] = useState("verify");
   const [place, setPlace] = useState("gps");
@@ -53,70 +68,127 @@ export function ScanPage({ onHistory }: { onHistory: (gtin: string, serial: stri
   async function submit() {
     setError("");
     setResult(null);
-    setBusy("Getting location…");
-    const location = place === "gps" ? await getLocation() : DEMO_PLACES[place];
-    const body: Record<string, unknown> = {
-      barcode: fromVisible(barcode.trim()),
-      event_type: eventType,
-      scanned_at: new Date().toISOString(),
-    };
-    if (location) body.location = location;
-    if (photo) body.package_image = await photoToBase64(photo);
-    setBusy("Verifying… (the first request can take up to a minute while the server wakes up)");
+    setNotice(false);
+    setBusy(t("locating"));
+    const scannedAt = new Date().toISOString();
     try {
-      setResult(await api<ScanResult>("/scan", { method: "POST", body: JSON.stringify(body) }, await currentToken()));
+      const location = place === "gps" ? await getLocation() : DEMO_PLACES[place];
+      setNotice(!location);
+      const body: Record<string, unknown> = {
+        barcode: fromVisible(barcode.trim()),
+        event_type: eventType,
+        scanned_at: scannedAt,
+      };
+      if (location) body.location = location;
+      if (photo) {
+        try {
+          body.package_image = await photoToBase64(photo);
+        } catch {
+          throw new Error("photoFailed");
+        }
+      }
+      setBusy(t("verifying"));
+      setResult(
+        await api<ScanResult>(
+          "/scan",
+          { method: "POST", body: JSON.stringify(body) },
+          await currentToken(),
+        ),
+      );
     } catch (e) {
-      setError((e as Error).message);
+      setError(
+        t(
+          (e instanceof ApiError
+            ? e.message
+            : e instanceof Error && e.message === "photoFailed"
+              ? "photoFailed"
+              : "requestFailed") as TranslationKey,
+        ),
+      );
     } finally {
       setBusy("");
     }
   }
 
   return (
-    <div className="page">
+    <div className="page card scan-card">
       {scanning ? (
-        <Scanner onScan={onScan} onClose={() => setScanning(false)} />
+        <Suspense fallback={<p role="status">{t("loading")}</p>}>
+          <Scanner onScan={onScan} onClose={() => setScanning(false)} />
+        </Suspense>
       ) : (
-        <button className="primary big" onClick={() => setScanning(true)}>📷 Scan DataMatrix</button>
+        <button className="primary big" onClick={() => setScanning(true)}>
+          {t("openCamera")}
+        </button>
       )}
 
       <label>
-        Barcode (scanned, typed or pasted)
-        <textarea value={visible(barcode)} onChange={(e) => setBarcode(fromVisible(e.target.value))} rows={2} />
+        {t("barcode")}
+        <textarea
+          value={visible(barcode)}
+          onChange={(e) => setBarcode(fromVisible(e.target.value))}
+          rows={2}
+        />
+        <small>{t("separator")}</small>
       </label>
       <div className="chips">
         {SAMPLES.map((s) => (
-          <button key={s.label} className="chip" onClick={() => setBarcode(s.barcode())}>{s.label}</button>
+          <button key={s.label} className="chip" onClick={() => setBarcode(s.barcode())}>
+            {t(s.label)}
+          </button>
         ))}
-        <button className="chip" onClick={() => setBarcode(pharmaBarcode(freshSerial()))}>New demo serial</button>
+        <button className="chip" onClick={() => setBarcode(pharmaBarcode(freshSerial()))}>
+          {t("newSerial")}
+        </button>
       </div>
 
       <label>
-        What are you doing?
+        {t("eventType")}
         <select value={eventType} onChange={(e) => setEventType(e.target.value)}>
-          <option value="verify">Verify (check a pack)</option>
-          <option value="receive">Receive a delivery</option>
-          <option value="dispense">Dispense to a patient</option>
-          <option value="ship">Ship onward</option>
+          <option value="verify">{t("verify")}</option>
+          <option value="receive">{t("receive")}</option>
+          <option value="dispense">{t("dispense")}</option>
+          <option value="ship">{t("ship")}</option>
         </select>
       </label>
 
       <label>
-        Location
+        {t("location")}
         <select value={place} onChange={(e) => setPlace(e.target.value)}>
-          <option value="gps">My phone's GPS</option>
-          {Object.keys(DEMO_PLACES).map((p) => <option key={p} value={p}>Demo: pretend I'm in {p}</option>)}
+          <option value="gps">{t("gps")}</option>
+          {Object.keys(DEMO_PLACES).map((p) => (
+            <option key={p} value={p}>
+              {t("demoPlace")} {p}
+            </option>
+          ))}
         </select>
       </label>
 
       <label>
-        Package photo (optional, enables the packaging check)
-        <input type="file" accept="image/*" capture="environment" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
+        {t("photo")}
+        <small>{t("photoHint")}</small>
+        <input
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
+        />
       </label>
 
-      <button className="primary big" disabled={!barcode.trim() || !!busy} onClick={submit}>Verify pack</button>
-      {busy && <p className="hint">{busy}</p>}
-      {error && <p className="error">{error}</p>}
+      <button className="primary big" disabled={!barcode.trim() || !!busy} onClick={submit}>
+        {t("verifyPack")}
+      </button>
+      {busy && (
+        <p role="status" className="hint">
+          {busy}
+        </p>
+      )}
+      {notice && <p className="hint">{t("noLocation")}</p>}
+      {error && (
+        <p role="alert" className="error">
+          {error}
+        </p>
+      )}
       {result && (
         <ResultCard
           result={result}
