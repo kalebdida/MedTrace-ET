@@ -1,3 +1,6 @@
 -r requirements.txt
 pytest==9.1.1
 moto[dynamodb,sns,sqs]==5.2.4
+
+-r requirements-server.txt
+testcontainers==4.10.0

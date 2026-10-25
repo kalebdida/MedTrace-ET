@@ -80,8 +80,14 @@ def get_services() -> Services:
     global _services
     if _services is None:
         settings = Settings.from_env()
-        audit = AuditLog(boto3.resource("dynamodb").Table(settings.table_name)) if settings.table_name else None
+        audit = AuditLog(boto3.resource("dynamodb").Table(settings.table_name)) if settings.table_name and not os.environ.get("DATABASE_URL") else None
         alerts = AlertPublisher(boto3.client("sns"), settings.alert_topic_arn) if settings.alert_topic_arn else None
+        if os.environ.get("DATABASE_URL"):
+            from medtrace.audit_postgres import AuditLog as PostgresAuditLog
+            audit = PostgresAuditLog(os.environ["DATABASE_URL"])
+        if not settings.alert_topic_arn and (os.environ.get("DISCORD_WEBHOOK_URL") or os.environ.get("NTFY_TOPIC_URL")):
+            from medtrace.alerts_webhook import AlertPublisher as WebhookPublisher
+            alerts = WebhookPublisher(os.environ.get("DISCORD_WEBHOOK_URL"), os.environ.get("NTFY_TOPIC_URL"))
         verifier = visual.load_verifier(settings.visual_model_module)
         _services = Services(settings, audit, alerts, verifier)
     return _services
