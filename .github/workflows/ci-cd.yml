@@ -42,7 +42,7 @@ jobs:
       - run: cd backend && python -m pytest -q
       - uses: aws-actions/setup-sam@v2
       - run: sam validate --lint --template-file infra/template.yaml --region us-east-1
-      - run: cfn-lint infra/bootstrap/github-oidc.yaml
+      - run: pip install cfn-lint==1.58.0 && cfn-lint infra/bootstrap/github-oidc.yaml
   deploy:
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.test.outputs.aws_enabled == 'true'
     needs: test
@@ -72,18 +72,3 @@ jobs:
           curl --fail-with-body --retry 5 "$API_URL/health" | jq -e '.status == "ok"'
           jq -r .body backend/events/parse.json > /tmp/parse.json
           curl --fail-with-body --retry 5 -H 'Content-Type: application/json' --data-binary @/tmp/parse.json "$API_URL/parse" | jq -e '.valid == true'
-
-  deploy-hf:
-    needs: test
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.test.outputs.hf_enabled == 'true' && vars.HF_SPACE_ID != ''
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-      - run: pip install huggingface_hub==0.30.2 httpx==0.28.1
-      - run: python scripts/deploy-space.py
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_SPACE_ID: ${{ vars.HF_SPACE_ID }}

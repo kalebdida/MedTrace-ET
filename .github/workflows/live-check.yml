@@ -1,0 +1,67 @@
+name: Live check
+# Every 10 minutes: keeps the free Render backend awake and checks the live
+# system. GitHub emails the repository owner when a run fails.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+    inputs:
+      adama_email:
+        description: "Pharmacy account in Adama (for the full clone demo)"
+        required: false
+      adama_password:
+        description: "Its password"
+        required: false
+      dessie_email:
+        description: "Pharmacy account in Dessie"
+        required: false
+      dessie_password:
+        description: "Its password"
+        required: false
+permissions:
+  contents: read
+concurrency:
+  group: live-check
+  cancel-in-progress: false
+env:
+  API_URL: https://medtrace-et.onrender.com
+  APP_URL: https://medtrace-app.onrender.com
+jobs:
+  live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Health (waits for a cold start)
+        run: |
+          for i in $(seq 1 18); do
+            if curl -sf -m 20 "$API_URL/health" | tee /tmp/health.json | jq -e '.status == "ok"' >/dev/null; then
+              cat /tmp/health.json; exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::Backend did not become healthy within 3 minutes"; exit 1
+      - name: Public barcode parsing
+        run: |
+          jq -r .body backend/events/parse.json > /tmp/parse.json
+          curl -sf -m 30 -H 'Content-Type: application/json' --data-binary @/tmp/parse.json "$API_URL/parse" \
+            | jq -e '.valid == true and .gtin == "09506000134352"'
+      - name: Writes require sign-in
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' -m 30 -X POST -H 'Content-Type: application/json' -d '{"barcode":"x"}' "$API_URL/scan")
+          test "$code" = 401 || { echo "::error::/scan without a token returned $code, expected 401"; exit 1; }
+      - name: Frontend is up
+        run: curl -sf -m 30 -o /dev/null "$APP_URL"
+      - name: Full clone demo (manual runs with accounts only)
+        if: github.event_name == 'workflow_dispatch' && inputs.adama_password != '' && inputs.dessie_password != ''
+        env:
+          ADAMA_EMAIL: ${{ inputs.adama_email }}
+          ADAMA_PASSWORD: ${{ inputs.adama_password }}
+          DESSIE_EMAIL: ${{ inputs.dessie_email }}
+          DESSIE_PASSWORD: ${{ inputs.dessie_password }}
+          SUPABASE_URL: https://qzhumrpdwqkleilqdmbl.supabase.co
+          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6aHVtcnBkd3FrbGVpbHFkbWJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4ODc3MzcsImV4cCI6MjEwODQ2MzczN30.c7WMDFzD4S2XAGWSuQIgf3NzppWejoxdg-1jqESj-vA
+        run: |
+          echo "::add-mask::$ADAMA_PASSWORD"; echo "::add-mask::$DESSIE_PASSWORD"
+          pip install -q httpx==0.28.1
+          bash scripts/run-demo.sh
