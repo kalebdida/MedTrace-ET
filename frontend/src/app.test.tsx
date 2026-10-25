@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
-import { ResultCard } from "./ResultCard";
+import { ResultCard, extractCloneJourney } from "./ResultCard";
+import { HistoryPage } from "./HistoryPage";
 import { api, type ScanResult, type History } from "./api";
 import { GS, fromVisible, pharmaBarcode, visible } from "./samples";
 import { LanguageProvider, LanguageSwitch, useI18n } from "./i18n";
@@ -57,6 +58,37 @@ describe("ResultCard", () => {
   it("states delivery failure clearly", () => {
     render(<ResultCard result={{ ...clone, alert_sent: false }} />);
     expect(screen.getByText(/report this pack manually/)).toBeTruthy();
+  });
+  it("visualizes the impossible clone journey with distance, minutes apart, and implied speed", () => {
+    const journey = extractCloneJourney(clone);
+    expect(journey).toEqual({
+      cityA: "PH-ADAMA-001",
+      cityB: "PH-DESSIE-007",
+      distanceKm: 291,
+      minutesApart: 50,
+      speedKmh: 349,
+    });
+    render(<ResultCard result={clone} />);
+    expect(screen.getByTestId("impossible-journey")).toBeTruthy();
+    expect(screen.getAllByText(/349 km\/h/).length).toBeGreaterThan(0);
+  });
+});
+describe("Inspector alerts dashboard", () => {
+  it("shows a clear message when GET /alerts returns 501", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response('{"error":"Not implemented"}', { status: 501 })),
+    );
+    render(<HistoryPage inspector />);
+    expect(await screen.findByText(/HTTP 501/)).toBeTruthy();
+  });
+  it("shows a clear message when GET /alerts returns 403", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response('{"error":"Forbidden"}', { status: 403 })),
+    );
+    render(<HistoryPage inspector />);
+    expect(await screen.findByText(/HTTP 403/)).toBeTruthy();
   });
 });
 describe("API client", () => {
