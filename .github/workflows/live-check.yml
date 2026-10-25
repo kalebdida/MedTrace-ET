@@ -35,8 +35,12 @@ jobs:
       - name: Health (waits for a cold start)
         run: |
           for i in $(seq 1 18); do
-            if curl -sf -m 20 "$API_URL/health" | tee /tmp/health.json | jq -e '.status == "ok"' >/dev/null; then
-              cat /tmp/health.json; exit 0
+            if curl -sf -m 20 "$API_URL/health" > /tmp/health.json; then
+              cat /tmp/health.json
+              # Healthy means the audit log, alerts, sign-in and packaging model are all live.
+              jq -e '.status == "ok" and .audit_log_configured and .alerts_configured and .auth_required and .visual_model_loaded' /tmp/health.json >/dev/null \
+                || { echo "::error::Backend is up but misconfigured"; exit 1; }
+              exit 0
             fi
             sleep 10
           done
