@@ -1,5 +1,6 @@
 name: Test and deploy
 on:
+  workflow_dispatch:
   pull_request:
   push:
     branches: [main]
@@ -11,18 +12,39 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    outputs:
+      aws_enabled: ${{ steps.targets.outputs.aws_enabled }}
+      hf_enabled: ${{ steps.targets.outputs.hf_enabled }}
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: local-test-only
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://postgres:local-test-only@localhost:5432/postgres
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - run: pip install -r backend/requirements-dev.txt
+      - id: targets
+        env:
+          AWS_ROLE: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          echo "aws_enabled=$([[ -n "$AWS_ROLE" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "hf_enabled=$([[ -n "$HF_TOKEN" ]] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+      - run: pip install -r backend/requirements-dev.txt -r backend/requirements-server.txt testcontainers==4.10.0
       - run: cd backend && python -m pytest -q
       - uses: aws-actions/setup-sam@v2
       - run: sam validate --lint --template-file infra/template.yaml --region us-east-1
       - run: cfn-lint infra/bootstrap/github-oidc.yaml
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.test.outputs.aws_enabled == 'true'
     needs: test
     runs-on: ubuntu-latest
     permissions:
@@ -50,3 +72,18 @@ jobs:
           curl --fail-with-body --retry 5 "$API_URL/health" | jq -e '.status == "ok"'
           jq -r .body backend/events/parse.json > /tmp/parse.json
           curl --fail-with-body --retry 5 -H 'Content-Type: application/json' --data-binary @/tmp/parse.json "$API_URL/parse" | jq -e '.valid == true'
+
+  deploy-hf:
+    needs: test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && needs.test.outputs.hf_enabled == 'true' && vars.HF_SPACE_ID != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: pip install huggingface_hub==0.30.2 httpx==0.28.1
+      - run: python scripts/deploy-space.py
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE_ID: ${{ vars.HF_SPACE_ID }}
