@@ -4,7 +4,7 @@ import argparse, json
 import numpy as np
 import onnxruntime as ort
 from PIL import Image
-from common import ROOT, PACKAGE, preprocess
+from augment import ROOT, PACKAGE, preprocess
 
 
 def main():

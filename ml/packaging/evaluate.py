@@ -13,7 +13,7 @@ from sklearn.metrics import (
     confusion_matrix,
     accuracy_score,
 )
-from common import ROOT, PACKAGE
+from augment import ROOT, PACKAGE
 from visual_model import load
 
 

@@ -1,0 +1,27 @@
+{
+  "dataset": {
+    "captures_per_product": 60,
+    "validation_genuine": 36,
+    "test_genuine": 36,
+    "test_defects": 216
+  },
+  "previous_head": {
+    "auc": 0.9467592592592592,
+    "mismatch_below": 0.9844014644622803,
+    "test_genuine_false_alarm_rate": 0.027777777777777776,
+    "test_defect_recall": 0.7314814814814815,
+    "false_alarms": "1/36"
+  },
+  "refit_head": {
+    "auc": 0.9998713991769547,
+    "mismatch_below": 0.9462403478915358,
+    "test_genuine_false_alarm_rate": 0.027777777777777776,
+    "test_defect_recall": 1.0,
+    "false_alarms": "1/36"
+  },
+  "refit_params": {
+    "alpha": 0.3,
+    "scale": 4.0,
+    "extra_genuine_views": 4
+  }
+}

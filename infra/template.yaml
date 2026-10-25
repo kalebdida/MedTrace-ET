@@ -144,8 +144,8 @@ Resources:
           REQUIRE_AUTH: 'true'
           LOG_LEVEL: INFO
           VISUAL_MODEL_MODULE: visual_model
-          VISUAL_MISMATCH_BELOW: '0.8423078060150146'
-          VISUAL_MATCH_AT: '0.8462605834007263'
+          VISUAL_MISMATCH_BELOW: '0.9462403414552365'
+          VISUAL_MATCH_AT: '0.9476746525930362'
       Events:
         Health:
           Type: HttpApi

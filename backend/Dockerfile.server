@@ -5,5 +5,5 @@ RUN pip install --no-cache-dir -r requirements.txt -r requirements-server.txt
 RUN useradd -m -u 1000 app
 COPY --chown=1000:1000 . .
 USER 1000
-ENV PORT=7860 REQUIRE_AUTH=true VISUAL_MODEL_MODULE=visual_model VISUAL_MISMATCH_BELOW=0.8423078060150146 VISUAL_MATCH_AT=0.8462605834007263
+ENV PORT=7860 REQUIRE_AUTH=true VISUAL_MODEL_MODULE=visual_model VISUAL_MISMATCH_BELOW=0.9462403414552365 VISUAL_MATCH_AT=0.9476746525930362
 CMD ["sh", "-c", "exec uvicorn server:api --host 0.0.0.0 --port ${PORT:-7860} --workers 1"]
