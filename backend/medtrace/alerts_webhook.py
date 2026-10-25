@@ -27,7 +27,14 @@ class AlertPublisher:
                     **(
                         {"json": {"content": text[:2000]}}
                         if discord
-                        else {"content": text.encode()}
+                        else {
+                            "content": text.encode(),
+                            "headers": {
+                                "Title": "MedTrace-ET: cloned barcode intercepted",
+                                "Priority": "high",
+                                "Tags": "rotating_light",
+                            },
+                        }
                     ),
                 )
                 response.raise_for_status()
