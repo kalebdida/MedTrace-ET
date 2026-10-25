@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { DemoRun, demoDependencies, type DemoState } from "./demo";
 import { useI18n } from "./i18n";
 import { en, type TranslationKey } from "./translations";
+import { Icon } from "./Icon";
 import { ResultCard } from "./ResultCard";
 import { HistoryView } from "./HistoryPage";
 const steps = ["demoStep1", "demoStep2", "demoStep3", "demoStep4", "demoStep5"] as const;
 export default function DemoPage({ onClose }: { onClose: () => void }) {
   const { t } = useI18n();
-  const run = useRef<DemoRun>();
+  const run = useRef<DemoRun | undefined>(undefined);
   const [state, setState] = useState<DemoState>();
   const [adama, setAdama] = useState("");
   const [dessie, setDessie] = useState("");
@@ -92,7 +93,9 @@ export default function DemoPage({ onClose }: { onClose: () => void }) {
               className={(state?.step ?? 0) > index ? "done" : ""}
               aria-current={(state?.step ?? 0) === index ? "step" : undefined}
             >
-              <span aria-hidden>{(state?.step ?? 0) > index ? "✓" : index + 1}</span>
+              <span aria-hidden>
+                {(state?.step ?? 0) > index ? <Icon name="check" size={16} /> : index + 1}
+              </span>
               {t(key)}
             </li>
           ))}

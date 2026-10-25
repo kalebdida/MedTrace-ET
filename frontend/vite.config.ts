@@ -1,6 +1,7 @@
 import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 import type { Plugin } from "vite";
+
 function offlineShell(): Plugin {
   return {
     name: "offline-shell",
@@ -34,11 +35,29 @@ function offlineShell(): Plugin {
     },
   };
 }
-export default defineConfig({
-  plugins: [react(), offlineShell()],
-  test: {
-    environment: "jsdom",
-    setupFiles: ["./src/testSetup.ts"],
-    exclude: ["e2e/**", "node_modules/**"],
-  },
+
+export default defineConfig(({ command }) => {
+  if (command === "build") {
+    process.env.NODE_ENV = "production";
+  }
+  return {
+    plugins: [react(), offlineShell()],
+    define:
+      command === "build"
+        ? {
+            "process.env.NODE_ENV": JSON.stringify("production"),
+            "import.meta.env.PROD": true,
+            "import.meta.env.DEV": false,
+          }
+        : undefined,
+    server: {
+      hmr: process.env.DISABLE_HMR !== "true",
+      watch: process.env.DISABLE_HMR === "true" ? null : {},
+    },
+    test: {
+      environment: "jsdom",
+      setupFiles: ["./src/testSetup.ts"],
+      exclude: ["e2e/**", "scripts/**", "node_modules/**"],
+    },
+  };
 });

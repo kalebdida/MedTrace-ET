@@ -11,7 +11,7 @@ export function Scanner({
 }) {
   const { t } = useI18n();
   const video = useRef<HTMLVideoElement>(null);
-  const controlsRef = useRef<IScannerControls>();
+  const controlsRef = useRef<IScannerControls | undefined>(undefined);
   const [error, setError] = useState(false);
   const [torch, setTorch] = useState(false);
   const [supported, setSupported] = useState(false);
@@ -75,7 +75,13 @@ export function Scanner({
       ) : (
         <div className="viewfinder">
           <video ref={video} muted playsInline />
-          <div className="target-box" aria-hidden />
+          <div className="target-box" aria-hidden="true">
+            <span className="vf-corner tl" />
+            <span className="vf-corner tr" />
+            <span className="vf-corner bl" />
+            <span className="vf-corner br" />
+            <span className="vf-laser" />
+          </div>
         </div>
       )}
       <p>{t("cameraHint")}</p>

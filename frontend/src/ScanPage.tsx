@@ -1,5 +1,6 @@
 import { lazy, Suspense, useCallback, useState } from "react";
 import { api, currentToken, type ScanResult } from "./api";
+import { Icon } from "./Icon";
 import { ResultCard } from "./ResultCard";
 import { useI18n } from "./i18n";
 import { ApiError } from "./api";
@@ -111,84 +112,98 @@ export function ScanPage({ onHistory }: { onHistory: (gtin: string, serial: stri
   }
 
   return (
-    <div className="page card scan-card">
-      {scanning ? (
-        <Suspense fallback={<p role="status">{t("loading")}</p>}>
-          <Scanner onScan={onScan} onClose={() => setScanning(false)} />
-        </Suspense>
-      ) : (
-        <button className="primary big" onClick={() => setScanning(true)}>
-          {t("openCamera")}
-        </button>
-      )}
-
-      <label>
-        {t("barcode")}
-        <textarea
-          value={visible(barcode)}
-          onChange={(e) => setBarcode(fromVisible(e.target.value))}
-          rows={2}
-        />
-        <small>{t("separator")}</small>
-      </label>
-      <div className="chips">
-        {SAMPLES.map((s) => (
-          <button key={s.label} className="chip" onClick={() => setBarcode(s.barcode())}>
-            {t(s.label)}
+    <div className="scan-workspace">
+      <div className="page card scan-card">
+        {scanning ? (
+          <Suspense
+            fallback={
+              <div className="skeleton-block" role="status">
+                {t("loading")}
+              </div>
+            }
+          >
+            <Scanner onScan={onScan} onClose={() => setScanning(false)} />
+          </Suspense>
+        ) : (
+          <button className="primary big camera-trigger-btn" onClick={() => setScanning(true)}>
+            <Icon name="scan" size={20} />
+            {t("openCamera")}
           </button>
-        ))}
-        <button className="chip" onClick={() => setBarcode(pharmaBarcode(freshSerial()))}>
-          {t("newSerial")}
-        </button>
-      </div>
+        )}
 
-      <label>
-        {t("eventType")}
-        <select value={eventType} onChange={(e) => setEventType(e.target.value)}>
-          <option value="verify">{t("verify")}</option>
-          <option value="receive">{t("receive")}</option>
-          <option value="dispense">{t("dispense")}</option>
-          <option value="ship">{t("ship")}</option>
-        </select>
-      </label>
-
-      <label>
-        {t("location")}
-        <select value={place} onChange={(e) => setPlace(e.target.value)}>
-          <option value="gps">{t("gps")}</option>
-          {Object.keys(DEMO_PLACES).map((p) => (
-            <option key={p} value={p}>
-              {t("demoPlace")} {p}
-            </option>
+        <label>
+          {t("barcode")}
+          <textarea
+            value={visible(barcode)}
+            onChange={(e) => setBarcode(fromVisible(e.target.value))}
+            rows={2}
+            placeholder="]d201095060001343521730123110BATCH42⟨GS⟩21DEMO0001"
+          />
+          <small>{t("separator")}</small>
+        </label>
+        <div className="chips">
+          {SAMPLES.map((s) => (
+            <button key={s.label} className="chip" onClick={() => setBarcode(s.barcode())}>
+              {t(s.label)}
+            </button>
           ))}
-        </select>
-      </label>
+          <button className="chip" onClick={() => setBarcode(pharmaBarcode(freshSerial()))}>
+            {t("newSerial")}
+          </button>
+        </div>
 
-      <label>
-        {t("photo")}
-        <small>{t("photoHint")}</small>
-        <input
-          type="file"
-          accept="image/*"
-          capture="environment"
-          onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
-        />
-      </label>
+        <div className="form-two-col">
+          <label>
+            {t("eventType")}
+            <select value={eventType} onChange={(e) => setEventType(e.target.value)}>
+              <option value="verify">{t("verify")}</option>
+              <option value="receive">{t("receive")}</option>
+              <option value="dispense">{t("dispense")}</option>
+              <option value="ship">{t("ship")}</option>
+            </select>
+          </label>
 
-      <button className="primary big" disabled={!barcode.trim() || !!busy} onClick={submit}>
-        {t("verifyPack")}
-      </button>
-      {busy && (
-        <p role="status" className="hint">
-          {busy}
-        </p>
-      )}
-      {notice && <p className="hint">{t("noLocation")}</p>}
-      {error && (
-        <p role="alert" className="error">
-          {error}
-        </p>
-      )}
+          <label>
+            {t("location")}
+            <select value={place} onChange={(e) => setPlace(e.target.value)}>
+              <option value="gps">{t("gps")}</option>
+              {Object.keys(DEMO_PLACES).map((p) => (
+                <option key={p} value={p}>
+                  {t("demoPlace")} {p}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <label className="file-upload-label">
+          {t("photo")}
+          <small>{t("photoHint")}</small>
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            onChange={(e) => setPhoto(e.target.files?.[0] ?? null)}
+          />
+        </label>
+
+        <button className="primary big" disabled={!barcode.trim() || !!busy} onClick={submit}>
+          {t("verifyPack")} <span aria-hidden="true">→</span>
+        </button>
+        {busy && (
+          <div role="status" className="skeleton-card hint">
+            <div className="skeleton-line wide" />
+            <div className="skeleton-line" />
+            <span>{busy}</span>
+          </div>
+        )}
+        {notice && <p className="hint">{t("noLocation")}</p>}
+        {error && (
+          <p role="alert" className="error">
+            {error}
+          </p>
+        )}
+      </div>
       {result && (
         <ResultCard
           result={result}
