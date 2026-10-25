@@ -68,3 +68,20 @@ def test_asymmetric_jwks_and_audience(monkeypatch):
         server.claims(jwt.encode({**payload, "aud": "wrong"}, key, algorithm="RS256"))
         is None
     )
+
+
+def test_inspector_role_claim_and_alerts_require_token(monkeypatch, aws):
+    monkeypatch.setenv("SUPABASE_URL", "https://example.supabase.co")
+    monkeypatch.setenv("SUPABASE_JWT_SECRET", "test-secret")
+    payload = {
+        "sub": "inspector",
+        "aud": "authenticated",
+        "iss": "https://example.supabase.co/auth/v1",
+        "exp": time.time() + 100,
+        "app_metadata": {"role": "inspector"},
+        "user_metadata": {"role": "inspector-forged"},
+    }
+    assert server.claims(jwt.encode(payload, "test-secret", algorithm="HS256"))["custom:role"] == "inspector"
+    forged = {**payload, "app_metadata": {}}
+    assert "custom:role" not in server.claims(jwt.encode(forged, "test-secret", algorithm="HS256"))
+    assert TestClient(server.api).get("/alerts").status_code == 401

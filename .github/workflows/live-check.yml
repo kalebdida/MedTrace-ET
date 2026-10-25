@@ -18,6 +18,9 @@ on:
       dessie_password:
         description: "Its password"
         required: false
+      inspector_password:
+        description: "Password of inspector@medtrace.demo (checks the alerts list)"
+        required: false
 permissions:
   contents: read
 concurrency:
@@ -54,6 +57,8 @@ jobs:
         run: |
           code=$(curl -s -o /dev/null -w '%{http_code}' -m 30 -X POST -H 'Content-Type: application/json' -d '{"barcode":"x"}' "$API_URL/scan")
           test "$code" = 401 || { echo "::error::/scan without a token returned $code, expected 401"; exit 1; }
+          code=$(curl -s -o /dev/null -w '%{http_code}' -m 30 "$API_URL/alerts")
+          test "$code" = 401 || { echo "::error::/alerts without a token returned $code, expected 401"; exit 1; }
       - name: Frontend is up
         run: curl -sf -m 30 -o /dev/null "$APP_URL"
       - name: Full clone demo (manual runs with accounts only)
@@ -71,3 +76,16 @@ jobs:
           done
           pip install -q httpx==0.28.1
           bash scripts/run-demo.sh
+      - name: Inspector alert list (manual runs with the inspector account only)
+        if: github.event_name == 'workflow_dispatch' && inputs.inspector_password != ''
+        run: |
+          password=$(jq -r .inputs.inspector_password "$GITHUB_EVENT_PATH"); echo "::add-mask::$password"
+          token=$(jq -n --arg p "$password" '{email:"inspector@medtrace.demo",password:$p}' \
+            | curl -sf -m 30 -H "apikey: $SUPABASE_ANON_KEY" -H 'Content-Type: application/json' -d @- \
+                "https://qzhumrpdwqkleilqdmbl.supabase.co/auth/v1/token?grant_type=password" | jq -r .access_token)
+          echo "::add-mask::$token"
+          curl -sf -m 30 -H "Authorization: Bearer $token" "$API_URL/alerts?limit=5" \
+            | tee /tmp/alerts.json | jq -e '(.alerts | length) >= 1 and (.alerts[0].flags | length) >= 1' >/dev/null
+          jq -c '{count: (.alerts | length), newest: .alerts[0] | {site_id, verdict, codes: [.flags[].code]}, next_before}' /tmp/alerts.json
+        env:
+          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF6aHVtcnBkd3FrbGVpbHFkbWJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4ODc3MzcsImV4cCI6MjEwODQ2MzczN30.c7WMDFzD4S2XAGWSuQIgf3NzppWejoxdg-1jqESj-vA

@@ -64,6 +64,9 @@ def claims(token):
         site = verified.get("app_metadata", {}).get("site_id")
         if isinstance(site, str) and site:
             result["custom:site_id"] = site
+        role = verified.get("app_metadata", {}).get("role")
+        if isinstance(role, str) and role:
+            result["custom:role"] = role
         return result
     except (jwt.PyJWTError, KeyError, ValueError, TypeError):
         return None
@@ -104,7 +107,7 @@ async def bridge(request: Request, path: str):
     )
     if (
         request.method != "OPTIONS"
-        and request.url.path in ("/scan", "/history")
+        and request.url.path in ("/scan", "/history", "/alerts")
         and not verified
     ):
         return Response(

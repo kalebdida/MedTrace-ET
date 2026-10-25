@@ -45,6 +45,7 @@ All routes use Lambda proxy integration. API Gateway **HTTP APIs (payload 2.0)**
 | POST   | `/parse`   | public | Parse and validate a barcode. Stateless; writes nothing |
 | POST   | `/scan`    | sign-in | Full verification: parse → packaging check → clone check → audit log → alert |
 | GET    | `/history` | sign-in | Audit trail for one pack, with hash-chain verification |
+| GET    | `/alerts`  | inspector | Newest clone alerts across all packs (Postgres audit log only) |
 
 "Sign-in" means a Cognito JWT validated by the API Gateway authorizer (see [Authentication](#authentication-and-site-binding)). Without one, the backend answers **401**.
 
@@ -128,6 +129,19 @@ A scan whose verdict is FAIL still returns **HTTP 200**: the request succeeded a
 ```
 
 Errors and warnings carry a machine-readable `code` and a human-readable `message`, e.g. `{"code": "BAD_CHECK_DIGIT", "message": "GTIN (01) check digit is 3, expected 2.", "ai": "01"}`.
+
+### `GET /alerts?limit=20&before=…` (inspectors only)
+
+Newest clone-suspected scans across all packs, for an inspector dashboard. Only accounts with `app_metadata.role = "inspector"` (Supabase) or membership of the Cognito group `inspectors` may call it; others get 403. `limit` is 1–100 (default 20). Pass the returned `next_before` as `before` to get the next page; it is `null` on the last page.
+
+```json
+{ "alerts": [ { "event_id": "…", "scanned_at": "…", "site_id": "PH-DESSIE-007", "location": {"lat": 11.13, "lon": 39.63},
+                "gtin": "09506000134352", "serial": "…", "verdict": "FAIL", "pk": "SGTIN#…", "seq": 2,
+                "flags": [ { "code": "IMPOSSIBLE_TRAVEL", "severity": "critical", "message": "…" } ] } ],
+  "next_before": "2026-10-25T19:52:01.328+00:00" }
+```
+
+Only clone-indicating flags and summary fields are returned (no raw barcode). Available with the Postgres audit log (`DATABASE_URL`); the DynamoDB path returns 501 because it would need a secondary index. Look single packs up with `/history`.
 
 ### `GET /history?gtin=…&serial=…` or `?sscc=…`
 

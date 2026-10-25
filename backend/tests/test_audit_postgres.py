@@ -94,3 +94,25 @@ def test_app_role_permissions(database):
         conn.execute("SET ROLE medtrace_app")
         with pytest.raises(psycopg.errors.InsufficientPrivilege):
             conn.execute("DELETE FROM scan_audit WHERE pk=%s", (pk,))
+
+
+def test_recent_alerts_newest_first_with_cursor(database):
+    import uuid
+
+    with psycopg.connect(database, autocommit=True) as c:
+        c.execute(
+            (Path(__file__).resolve().parents[2] / "supabase/migrations/002_alert_index.sql").read_text()
+        )
+    log = AuditLog(database)
+    try:
+        tag = uuid.uuid4().hex
+        pks = [f"{tag}-{i}" for i in range(3)]
+        for i, pk in enumerate(pks):
+            log.append(pk, None, {"clone_suspected": i != 1, "site_id": f"S{i}"})
+        newest, cursor = log.recent_alerts(1)
+        assert [r["pk"] for r in newest] == [pks[2]] and cursor
+        older, _ = log.recent_alerts(50, cursor)
+        mine = [r["pk"] for r in older if r["pk"].startswith(tag)]
+        assert mine == [pks[0]]  # the non-clone record is never listed
+    finally:
+        log.pool.close()

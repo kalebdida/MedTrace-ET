@@ -9,6 +9,8 @@ Routes (API Gateway REST or HTTP API, Lambda proxy integration):
                     the audit log and raise an SNS alert on a clone
     GET  /history   audit trail of one pack (?gtin=&serial= or ?sscc=),
                     with hash-chain verification
+    GET  /alerts    inspectors only: newest clone alerts across all packs
+                    (?limit=&before=), Postgres audit log only
 
 /scan and /history require a caller authenticated by the API Gateway JWT
 (Cognito) authorizer unless REQUIRE_AUTH=false; /parse and /health are public.
@@ -286,11 +288,58 @@ def handle_history(event, services: Services) -> dict:
     }
 
 
+ALERTS_DEFAULT_LIMIT = 20
+ALERTS_MAX_LIMIT = 100
+
+
+def handle_alerts(event, services: Services) -> dict:
+    if services.audit is None:
+        raise HttpError(503, "Scan logging is not configured (SCAN_TABLE_NAME is unset)")
+    caller = _caller(event, services.settings)
+    if caller is None:
+        raise HttpError(401, "Sign-in required")
+    if not caller.inspector:
+        raise HttpError(403, "Only inspector accounts can list alerts")
+    if not hasattr(services.audit, "recent_alerts"):
+        raise HttpError(501, "Listing alerts needs the Postgres audit log; look packs up with /history instead")
+
+    params = event.get("queryStringParameters") or {}
+    raw_limit = params.get("limit") or str(ALERTS_DEFAULT_LIMIT)
+    if not raw_limit.isdigit() or not 1 <= int(raw_limit) <= ALERTS_MAX_LIMIT:
+        raise HttpError(400, f"limit must be between 1 and {ALERTS_MAX_LIMIT}")
+    before = params.get("before")
+    if before is not None:
+        try:
+            before = _timestamp(before).isoformat()
+        except HttpError:
+            raise HttpError(400, "before must be an ISO-8601 timestamp with a timezone offset") from None
+
+    records, next_before = services.audit.recent_alerts(int(raw_limit), before)
+    return {"alerts": [_alert_summary(r) for r in records], "next_before": next_before}
+
+
+def _alert_summary(record: dict) -> dict:
+    keep = (
+        "event_id", "received_at", "scanned_at", "event_type", "site_id", "site_source", "actor",
+        "location", "gtin", "serial", "batch", "expiry", "sscc", "verdict", "pk", "seq", "record_hash",
+    )
+    summary = {k: record[k] for k in keep if k in record}
+    summary["flags"] = [
+        {k: f.get(k) for k in ("code", "severity", "message")}
+        for f in record.get("flags", [])
+        if f.get("clone_indicator")
+    ]
+    if record.get("visual"):
+        summary["visual_status"] = record["visual"].get("status")
+    return summary
+
+
 ROUTES = {
     ("GET", "/health"): handle_health,
     ("POST", "/parse"): handle_parse,
     ("POST", "/scan"): handle_scan,
     ("GET", "/history"): handle_history,
+    ("GET", "/alerts"): handle_alerts,
 }
 
 
@@ -507,6 +556,20 @@ def _timestamp(value) -> datetime | None:
 class Caller:
     subject: str
     site_id: str | None
+    inspector: bool = False
+
+
+INSPECTOR_ROLE = "inspector"
+INSPECTOR_GROUP = "inspectors"  # Cognito group on the AWS path
+
+
+def _is_inspector(claims: dict) -> bool:
+    if claims.get("custom:role") == INSPECTOR_ROLE:
+        return True
+    groups = claims.get("cognito:groups") or []
+    if isinstance(groups, str):  # API Gateway passes lists as "[a b]" or "a,b"
+        groups = groups.strip("[]").replace(",", " ").split()
+    return INSPECTOR_GROUP in groups
 
 
 def _caller(event: dict, settings: Settings) -> Caller | None:
@@ -519,7 +582,7 @@ def _caller(event: dict, settings: Settings) -> Caller | None:
     site_id = claims.get(settings.site_claim) or None
     if site_id is not None and not (isinstance(site_id, str) and _ID_PATTERN.fullmatch(site_id)):
         raise HttpError(403, "The account's site_id claim is malformed")
-    return Caller(str(claims["sub"]), site_id)
+    return Caller(str(claims["sub"]), site_id, _is_inspector(claims))
 
 
 def _require_caller(event: dict, settings: Settings) -> Caller | None:

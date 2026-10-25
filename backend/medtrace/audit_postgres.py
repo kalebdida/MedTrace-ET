@@ -59,3 +59,21 @@ class AuditLog:
         except UniqueViolation as exc:
             raise ChainConflict(pk) from exc
         return item
+
+    def recent_alerts(self, limit, before=None):
+        """Newest clone-suspected records across all packs.
+
+        Returns (records, next_before): pass next_before back as `before` for
+        the next page; it is None on the last page.
+        """
+        with self.pool.connection() as conn:
+            rows = conn.execute(
+                "SELECT record, created_at FROM scan_audit"
+                " WHERE record->>'clone_suspected' = 'true'"
+                " AND (%(before)s::timestamptz IS NULL OR created_at < %(before)s::timestamptz)"
+                " ORDER BY created_at DESC, pk, seq LIMIT %(limit)s",
+                {"before": before, "limit": limit + 1},
+            ).fetchall()
+        more = len(rows) > limit
+        rows = rows[:limit]
+        return [r[0] for r in rows], rows[-1][1].isoformat() if more else None
