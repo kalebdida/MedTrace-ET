@@ -306,6 +306,19 @@ export function App() {
     return () => data.subscription.unsubscribe();
   }, []);
   const site = session?.user.app_metadata?.site_id as string | undefined;
+  function signOut() {
+    setSession(null);
+    setHistoryFor(undefined);
+    setTab("scan");
+    try {
+      Object.keys(localStorage)
+        .filter((key) => key.startsWith("sb-"))
+        .forEach((key) => localStorage.removeItem(key));
+    } catch {
+      // storage unavailable; the in-memory session is already cleared
+    }
+    void supabase.auth.signOut({ scope: "local" }).catch(() => {});
+  }
 
   return (
     <>
@@ -327,7 +340,7 @@ export function App() {
             <Icon name={theme === "light" ? "moon" : "sun"} size={19} />
           </button>
           {session && (
-            <button className="signout" onClick={() => supabase.auth.signOut({ scope: "local" })}>
+            <button className="signout" onClick={signOut}>
               {t("signOut")}
             </button>
           )}
