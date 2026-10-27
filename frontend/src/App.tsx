@@ -327,7 +327,7 @@ export function App() {
             <Icon name={theme === "light" ? "moon" : "sun"} size={19} />
           </button>
           {session && (
-            <button className="signout" onClick={() => supabase.auth.signOut()}>
+            <button className="signout" onClick={() => supabase.auth.signOut({ scope: "local" })}>
               {t("signOut")}
             </button>
           )}
