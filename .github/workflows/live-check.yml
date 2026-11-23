@@ -1,9 +1,7 @@
 name: Live check
-# Every 10 minutes: keeps the free Render backend awake and checks the live
-# system. GitHub emails the repository owner when a run fails.
+# Manual only: checks the live system. The 10-minute schedule was removed
+# because every failed run emailed the repository owner.
 on:
-  schedule:
-    - cron: "*/10 * * * *"
   workflow_dispatch:
     inputs:
       adama_email:
